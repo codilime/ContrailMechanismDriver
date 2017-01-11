@@ -6,6 +6,8 @@ Contrail ML2 Mechanism Driver for [Gluon](https://wiki.openstack.org/wiki/Gluon 
 Installation
 ============
 
+The lazy soulution is to run install.sh script.
+
 Dependencies
 ------------
 * https://github.com/Juniper/contrail-python-api

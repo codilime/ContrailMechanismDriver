@@ -4,34 +4,42 @@
 - id: contrail-mechanism-driver_role
   type: group
   role: [contrail-mechanism-driver_role]
+  requires: [deploy_start]
+  tasks: [contrail-mechanism-driver-deps, contrail-mechanism-driver-deployment]
   parameters:
     strategy:
       type: parallel
 
-- id: contrail-mechanism-driver-deployment-puppet
+- id: contrail-mechanism-driver-deps
   type: puppet
-  role: [fuel-plugin-example_role]
-
-# If you do not want to use task-based deployment that is introduced as experimental
-# in fuel v8.0 comment code section below this comment, uncomment two lines below it
-# and do the same for tasks below.
-
+  role: [contrail-mechanism-driver-for-gluon]
   version: 2.0.0
   cross-depends:
     - name: deploy_start
   cross-depended-by:
     - name: deploy_end
-#  requires: [deploy_start] # version 1.0.0
-#  required_for: [deploy_end]
-
   parameters:
-    puppet_manifest: "deploy.pp"
+    puppet_manifest: "contraildriver-deps.pp"
+    puppet_modules: "."
+    timeout: 3600
+
+- id: contrail-mechanism-driver-deployment
+  type: puppet
+  role: [contrail-mechanism-driver-for-gluon]
+  version: 2.0.0
+  cross-depends:
+    - name: deploy_start
+    - name: contrail-mechanism-driver-deps
+  cross-depended-by:
+    - name: deploy_end
+  parameters:
+    puppet_manifest: "contraildriver-install.pp"
     puppet_modules: "."
     timeout: 3600
 
 #- id: fuel-plugin-example-post-deployment-sh
 #  type: shell
-#  role: [fuel-plugin-example_role]
+#  role: [contrail-mechanism-driver-for-gluon]
 #  version: 2.0.0
 #  cross-depends:
 #    - name: post_deployment_start
@@ -47,7 +55,7 @@
 
 #- id: fuel-plugin-example-pre-deployment-sh
 #  type: shell
-#  role: [fuel-plugin-example_role]
+#  role: [contrail-mechanism-driver-for-gluon]
 #  version: 2.0.0
 #  cross-depends:
 #    - name: pre_deployment_start

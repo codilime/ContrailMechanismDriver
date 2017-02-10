@@ -4,9 +4,9 @@
 # - https://blueprints.launchpad.net/fuel/+spec/component-registry
 # - https://specs.openstack.org/openstack/fuel-specs/specs/8.0/component-registry.html
 
-- name: additional_service:fuel-plugin-example
+- name: additional_service:fuel-plugin-contrail-mechanism-driver
   compatible: []
   requires: []
   incompatible: []
-  label: "Plugin label, that will be shown on UI"
-  description: "Component description (optional)"
+  label: "Contrail Mechanism Driver"
+  description: "Contrail ML2 Mechanism Driver for Gluon"

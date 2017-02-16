@@ -19,7 +19,6 @@ setup_stack()
 			;;
 
 		"post-config")
-			#configure_plugin
 			source $NEUTRON_DIR/devstack/plugin.sh
 			source $NEUTRON_DIR/devstack/lib/ml2 contrail_driver
 			enable_ml2_extension_driver

@@ -1,5 +1,11 @@
 #!/bin/sh
 
-Dir=`dirname $0`
+Functions="`dirname ${BASH_SOURCE[0]}`/../install_functions.sh"
+[ ! -r "$Functions" ] && { echo "Cant read functions library : $Functions!"; exit 2; }
+. "$Functions"
 
-exec $Dir/deployment_scripts/install.sh "$@"
+DEST=${DEST:-"/opt/stack"}
+
+install_dependencies
+install_plugin "$DEST"
+configure_plugin

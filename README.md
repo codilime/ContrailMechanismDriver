@@ -8,11 +8,12 @@ Installation
 
 As a devstack plugin
 --------------------
-Enable plugin by adding 
-`
+Make sure that devstack is installed with ML2 enabled by adding `Q_PLUGIN=ml2` to `local.conf`.
+Enable Contrail and ContrailMechanismDriver by adding
+```
 enable_plugin contrail https://github.com/zioc/contrail-devstack-plugin.git
 enable_plugin contrail-mechanism-driver https://github.com/codilime/ContrailMechanismDriver
-` 
+```
 to `local.conf` file in devstack.
 Then siply run `./stack.sh`.
 

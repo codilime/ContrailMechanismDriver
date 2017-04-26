@@ -41,6 +41,16 @@ from neutron_plugin_contrail.plugins.opencontrail.vnc_client import (
     vn_res_handler
 )
 from oslo_log import log
+# from oslo_config import ocfg
+
+group_contrail = cfg.OptGroup(name='contrail', title='Contrail node details')
+contrail_opts = [
+    cfg.StrOpt('ContrailNodeAddress', default='127.0.0.1')
+]
+
+CONF = cfg.CONF(default_config_files=['/etc/contrail_ml2_driver.conf'])
+CONF.register_group(group_contrail)
+CONF.register_opts(contrail_opts, group_contrail)
 
 vnc_extra_opts = [
     cfg.BoolOpt('apply_subnet_host_routes', default=False),

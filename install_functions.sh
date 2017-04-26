@@ -11,6 +11,14 @@ append_value_colon()
 	echo "$str$sep$val"
 }
 
+locate_entry_points()
+{
+	local SearchDir='/usr/lib/python2.7/dist-packages'
+	local LastVer=$(find "$SearchDir" -name 'neutron-*.egg-info' | sed 's@^.*/neutron-@@; s/\.egg-info$//;' | sort -n | tail -1)
+	local EntryFile="$SearchDir/neutron-$LastVer.egg-info/entry_points.txt"
+	echo "$EntryFile"
+}
+
 install_dependencies()
 {
 	type crudini &> /dev/null || sudo apt-get -y install crudini
@@ -27,7 +35,7 @@ install_dependencies()
 
 install_plugin()
 {
-	[ -z "$1" ] && { echo "Missing argument for \`install_plugin' function: missing OpenStac install directory"; exit 2; }
+	[ -z "$1" ] && { echo "Missing argument for \`install_plugin' function: missing OpenStack install directory"; exit 2; }
 	OpenStack="$1"
 	{ date; echo "Copying plugin (whole dir: $MainDir/neutron) into $OpenStack"; ls -al "$MainDir/neutron"; } >> /tmp/congl.log; 
 	
@@ -41,6 +49,10 @@ configure_plugin()
 	[ ! -e "$ML2_conf" ] && { echo "Configuration file ($ML2_conf) does not exist! Can't continue :/ - You need to enable ML2 plugin first!"; exit 2; }
 	m_drivers=$(sudo crudini --get "$ML2_conf" ml2 mechanism_drivers)
 	echo "$m_drivers" | grep -q 'contrail_driver' || sudo crudini --set "$ML2_conf" ml2 mechanism_drivers "$(append_value_colon "$m_drivers" contrail_driver)" 
-	sudo crudini --set /opt/stack/neutron/neutron.egg-info/entry_points.txt neutron.ml2.mechanism_drivers contrail_driver neutron.plugins.ml2.drivers.contrail_driver:ContrailMechanismDriver
+
+	EntryPoints='/opt/stack/neutron/neutron.egg-info/entry_points.txt'
+	[ ! -e "$EntryPoints" ] && EntryPoints=$(locate_entry_points)
+	[ ! -e "$EntryPoints" ] && { echo "Can't find entry_points file: $EntryPoints - Aborting!"; exit 2; }
+	sudo crudini --set "$EntryPoints" neutron.ml2.mechanism_drivers contrail_driver neutron.plugins.ml2.drivers.contrail_driver:ContrailMechanismDriver
 }
 

@@ -5,6 +5,7 @@ Functions="$(dirname "${BASH_SOURCE[0]}")/install_functions.sh"
 . "$Functions"
 
 DEST=${DEST:-"/opt/stack"}
+BakSuffix="-bak-$(date +%Y%m%d-%H%M%S)"
 ThisIP=$(ip route get 8.8.8.8 | sed '1 ! d; s/ *$//; s/.* //')
 NeutronMl2PluginConf="/etc/neutron/plugins/ml2/ml2_conf.ini"
 
@@ -69,8 +70,22 @@ heredoc-EOF
 	sudo cp /tmp/ml2_conf.ini "$dir"
 }
 
-[ ! -e "$NeutronMl2PluginConf" ] && CreateDefaultML2conf
-
 install_dependencies
 install_plugin "$DEST"
+
+NeutronConf="/etc/neutron/neutron.conf"
+sudo cp "$NeutronConf" "$NeutronConf$BakSuffix"
+crudini --del "$NeutronConf" DEFAULT api_extensions_path
+crudini --set "$NeutronConf" DEFAULT service_plugins neutron.services.l3_router.l3_router_plugin.L3RouterPlugin
+crudini --set --existing "$NeutronConf" DEFAULT core_plugin neutron.plugins.ml2.plugin.Ml2Plugin
+crudini --del --existing "$NeutronConf" quotas quota_driver
+
+if [ ! -e "$NeutronMl2PluginConf" ]; then
+	CreateDefaultML2conf
+else
+	sudo cp "$NeutronMl2PluginConf" "$NeutronMl2PluginConf$BakSuffix"
+fi
+
+
 configure_plugin
+

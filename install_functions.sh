@@ -53,6 +53,7 @@ configure_plugin()
 	EntryPoints='/opt/stack/neutron/neutron.egg-info/entry_points.txt'
 	[ ! -e "$EntryPoints" ] && EntryPoints=$(locate_entry_points)
 	[ ! -e "$EntryPoints" ] && { echo "Can't find entry_points file: $EntryPoints - Aborting!"; exit 2; }
+	[ ! -z "$BakSuffix" ] && sudo cp "$EntryPoints" "$EntryPoints$BakSuffix"
 	sudo crudini --set "$EntryPoints" neutron.ml2.mechanism_drivers contrail_driver neutron.plugins.ml2.drivers.contrail_driver:ContrailMechanismDriver
 }
 

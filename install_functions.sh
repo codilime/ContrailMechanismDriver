@@ -4,11 +4,20 @@ MainDir=$(dirname "${BASH_SOURCE[0]}")
 
 append_value_colon()
 {
-	str="$1"
-	val="$2"
-	sep=''
+	local str="$1"
+	local val="$2"
+	local sep=''
 	[ -z "$str" ] || sep=','
 	echo "$str$sep$val"
+}
+
+ini_add_if_not_exist()
+{
+	local IniFile="$1"
+	local IniSection="$2"
+	local IniKey="$3"
+	local IniVal="$4"
+	sudo crudini --get "$IniFile" "$IniSection" "$IniKey" || sudo crudini --set "$IniFile" "$IniSection" "$IniKey" "$IniVal"
 }
 
 locate_entry_points()
@@ -49,6 +58,8 @@ configure_plugin()
 	[ ! -e "$ML2_conf" ] && { echo "Configuration file ($ML2_conf) does not exist! Can't continue :/ - You need to enable ML2 plugin first!"; exit 2; }
 	m_drivers=$(sudo crudini --get "$ML2_conf" ml2 mechanism_drivers)
 	echo "$m_drivers" | grep -q 'contrail_driver' || sudo crudini --set "$ML2_conf" ml2 mechanism_drivers "$(append_value_colon "$m_drivers" contrail_driver)" 
+	ini_add_if_not_exist "$ML2_conf" ml2_driver_contrail controller '127.0.0.1'
+	ini_add_if_not_exist "$ML2_conf" ml2_driver_contrail port 8082
 
 	EntryPoints='/opt/stack/neutron/neutron.egg-info/entry_points.txt'
 	[ ! -e "$EntryPoints" ] && EntryPoints=$(locate_entry_points)

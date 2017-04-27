@@ -35,9 +35,15 @@ Configuring ML2 mechanism driver
 --------------------
 * In file `/etc/neutron/plugins/ml2/ml2_conf.ini`
 	* Make sure that in section *ml2* key *mechanism_drivers* have value **contrail_driver** in list
+	* Add section `ml2_driver_contrail` and point to contrail controller node:
+		- key *controller* should contain Contrail controller address (default: 127.0.0.1)
+		- key *port* should point to Contrail controller listen port (default: 8082)
+* Make sure that neutron-server reads `ml2_conf.ini` file during startup
 * In file `/opt/stack/neutron/neutron.egg-info/entry_points.txt`
 	* In section *neutron.ml2.mechanism_drivers* set key *contrail_driver* to **neutron.plugins.ml2.drivers.contrail_driver:ContrailMechanismDriver**
 
 Running
 -------
 Neutron service need to be restarted
+
+* For **devstack** another config file must be supplied to neutron by adding `--config-file /etc/neutron/plugins/ml2/ml2_conf.ini` to commandline

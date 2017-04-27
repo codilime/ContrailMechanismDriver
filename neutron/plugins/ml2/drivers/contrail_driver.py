@@ -17,7 +17,7 @@ import sys
 import time
 import traceback
 
-from requests import requests
+import requests
 from vnc_api import vnc_api
 
 from cfgm_common import exceptions as vnc_exc
@@ -43,14 +43,15 @@ from neutron_plugin_contrail.plugins.opencontrail.vnc_client import (
 from oslo_log import log
 # from oslo_config import ocfg
 
-group_contrail = cfg.OptGroup(name='contrail', title='Contrail node details')
+group_contrail = cfg.OptGroup(name='ml2_driver_contrail',
+                              title='Contrail controller details')
 contrail_opts = [
-    cfg.StrOpt('ContrailNodeAddress', default='127.0.0.1')
+    cfg.StrOpt('controller', default='127.0.0.1'),
+    cfg.IntOpt('port', default=8082)
 ]
 
-CONF = cfg.CONF(default_config_files=['/etc/contrail_ml2_driver.conf'])
-CONF.register_group(group_contrail)
-CONF.register_opts(contrail_opts, group_contrail)
+cfg.CONF.register_group(group_contrail)
+cfg.CONF.register_opts(contrail_opts, group_contrail)
 
 vnc_extra_opts = [
     cfg.BoolOpt('apply_subnet_host_routes', default=False),
@@ -99,15 +100,25 @@ class ContrailMechanismDriver(api.MechanismDriver):
     def initialize(self):
         logger.info("Initializing ConGl (Contrail Gluon) mechanism driver ...")
 
+        logger.warn("Cfg is %s %d" % (cfg.CONF.ml2_driver_contrail.controller,
+                                      cfg.CONF.ml2_driver_contrail.port))
+
         cfg.CONF.register_opts(vnc_extra_opts, 'APISERVER')
         admin_user = cfg.CONF.keystone_authtoken.admin_user
         admin_password = cfg.CONF.keystone_authtoken.admin_password
         admin_tenant_name = cfg.CONF.keystone_authtoken.admin_tenant_name
-        # api_srvr_ip = cfg.CONF.APISERVER.api_server_ip
-        # api_srvr_port = cfg.CONF.APISERVER.api_server_port
-        # Does IP address and Port number should be taken from neutron (?)
-        api_srvr_ip = "127.0.0.1"
-        api_srvr_port = 8082
+        try:
+            api_srvr_ip = cfg.CONF.ml2_driver_contrail.controller
+        except cfg.NoSuchOptError:
+            logger.info("No controller address in config - using default")
+            api_srvr_ip = "127.0.0.1"
+
+        try:
+            api_srvr_port = cfg.CONF.ml2_driver_contrail.port
+        except cfg.NoSuchOptError:
+            logger.info("No controller port in config - using default")
+            api_srvr_port = 8082
+
         try:
             auth_host = cfg.CONF.keystone_authtoken.auth_host
         except cfg.NoSuchOptError:
@@ -138,6 +149,9 @@ class ContrailMechanismDriver(api.MechanismDriver):
         except cfg.NoSuchOptError:
             api_server_url = "/"
 
+        logger.info("Connecting to Contrail server %s : %s" %
+                    (api_srvr_ip, api_srvr_port))
+
         connected = False
         while not connected:
             try:
@@ -156,7 +170,6 @@ class ContrailMechanismDriver(api.MechanismDriver):
                 connected = True
             except requests.exceptions.RequestException:
                 time.sleep(3)
-        logger.info("Contrail connection is %s" % (dump(self._vnc_lib)))
 
         self.handlers = {
             Hndl.VirtualNetwork: vn_res_handler.VNetworkHandler(self._vnc_lib),

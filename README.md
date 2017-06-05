@@ -37,12 +37,14 @@ _Note:_ `CONTRAIL_SRC_DIR` _is_ `/opt/stack/contrail` _when using_ **Contrail-in
 	If you don't have Contrail binary packages you can compile it from sources. Probably the easiest way is to use [Contrail-installer](https://github.com/Juniper/contrail-installer)
 
 	_Please note that it is not guaranteed that contrail-installer install all needed dependant libraries. Below list presents libraries neede by Contrail and not installed by contrail-installer._
-	Libraries:
+	
+	Libraries (via apt-get install):
 	* libcrypto++-dev
 	* libev4
 	* libev-dev
 	* libffi-dev
-	Python modules:
+	
+	Python modules (pip install):
 	* fixtures
 	* 'bitarray>=0.8.0'
 	* 'pycassa>=1.7.2'

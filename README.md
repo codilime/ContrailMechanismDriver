@@ -57,7 +57,7 @@ _Note:_ `CONTRAIL_SRC_DIR` _is_ `/opt/stack/contrail` _when using_ **Contrail-in
 4. Verify that Contrail is working correctly
 5. Install [contrail-python-api](https://github.com/Juniper/contrail-python-api)
 
-_Note:_ There is experimental script that tries to install Contrail as a standalone node. Script is located in (./util/contrail-install.sh).
+_Note:_ There is experimental script that tries to install Contrail as a standalone node. Script is located in [contrail-install.sh](./util/contrail-install.sh).
 
 As a devstack plugin - (All-in-one installation)
 ------------------------------------------------

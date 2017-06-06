@@ -91,9 +91,10 @@ Configuring ML2 mechanism driver
 	* Add section `ml2_driver_contrail` and point to contrail controller node:
 		- key *controller* should contain Contrail controller address (default: 127.0.0.1)
 		- key *port* should point to Contrail controller listen port (default: 8082)
-* Make sure that neutron-server reads `ml2_conf.ini` file during startup
-* In file `/opt/stack/neutron/neutron.egg-info/entry_points.txt`
-	* In section *neutron.ml2.mechanism_drivers* set key *contrail_driver* to **neutron.plugins.ml2.drivers.contrail_driver:ContrailMechanismDriver**
+* Make sure that neutron-server reads `ml2_conf.ini` file during startup (this might require to modify `/etc/init.d/neutron-server` file and add `--config-file=/etc/neutron/plugins/ml2/ml2_conf.ini` to **DAEMON_ARGS** variable
+* In file `entry_points.txt` (location depends on neutron version and OpenStack installation method) in section *neutron.ml2.mechanism_drivers* set key *contrail_driver* to **neutron.plugins.ml2.drivers.contrail_driver:ContrailMechanismDriver**
+	* For Fuel based installations: /usr/lib/python2.7/dist-packages/neutron-<version>.egg-info/entry_points.txt
+	* For devstack based installations: /opt/stack/neutron/neutron.egg-info/entry_points.txt
 
 Running
 =======

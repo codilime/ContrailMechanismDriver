@@ -17,6 +17,11 @@ Dependencies
 	git clone https://github.com/openstack/neutron
 	sudo pip install ./neutron
 	```
+* https://github.com/openstack/nova - for launching VMs on Contrail node
+	```sh
+	git clone https://github.com/openstack/nova
+	sudo pip install ./nova
+	```
 
 Installation
 ============

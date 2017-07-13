@@ -576,8 +576,8 @@ class ContrailMechanismDriver(api.MechanismDriver):
         try:
             vn_obj = self.handlers[Hndl.VirtualNetwork].get_vn_obj(id=net_id)
         except vnc_exc.NoIdError:
-            self._raise_contrail_exception('NetworkNotFound', net_id=net_id,
-                                           resource='port')
+            self.handlers[Hndl.VirtualNetwork]._raise_contrail_exception(
+                'NetworkNotFound', net_id=net_id, resource='port')
 
         vmih = self.handlers[Hndl.VMInterface]
 

@@ -6,12 +6,16 @@ Contrail ML2 Mechanism Driver for [Gluon](https://wiki.openstack.org/wiki/Gluon 
 Dependencies
 ============
 
+Contrail node
+-------------
+
 * https://github.com/Juniper/contrail-python-api
 	```sh
 	git clone https://github.com/Juniper/contrail-python-api
 	cd contrail-python-api
 	sudo python setup.py install
 	```
+
 * https://github.com/openstack/neutron
 	```sh
 	git clone https://github.com/openstack/neutron
@@ -21,6 +25,23 @@ Dependencies
 	```sh
 	git clone https://github.com/openstack/nova
 	sudo pip install ./nova
+	```
+
+OpenStack node
+--------------
+
+* `vnc_api` and `cfgm_common`. They are not available as standalone packages, so the best idea is to search for
+	`api-lib/dist/vnc_api-0.1.dev0.tar.gz` and `config/common/dist/cfgm_common-0.1.dev0.tar.gz` in
+	your Contrail build directory and then copy these files to OpenStack server. Then issue
+	```sh
+	sudo pip install vnc_api-0.1.dev0.tar.gz
+	sudo pip install cfgm_common-0.1.dev0.tar.gz
+	```
+
+* https://github.com/Juniper/contrail-neutron-plugin
+	```sh
+	git clone https://github.com/Juniper/contrail-neutron-plugin.git
+	sudo pip install ./contrail-neutron-plugin
 	```
 
 Installation

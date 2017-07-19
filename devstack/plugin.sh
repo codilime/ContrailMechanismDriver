@@ -21,8 +21,16 @@ setup_stack()
 		"post-config")
 			source "$NEUTRON_DIR/devstack/plugin.sh"
 
+			# Insert extension driver
+			local drivers=""
+			drivers=$(iniget $NEUTRON_CORE_PLUGIN_CONF ml2 mechanism_drivers)
+			if [ $drivers ]; then
+				drivers+=","
+			fi
+			drivers+="contrail_driver"
+			iniset $NEUTRON_CORE_PLUGIN_CONF ml2 mechanism_drivers $drivers
+
 			# Configuring driver
-			neutron_ml2_extension_driver_add "contrail_driver"
 			iniset $NEUTRON_CORE_PLUGIN_CONF ml2_driver_contrail controller $CONTRAIL_DRIVER_CONTROLLER
 			iniset $NEUTRON_CORE_PLUGIN_CONF ml2_driver_contrail port $CONTRAIL_DRIVER_PORT
 

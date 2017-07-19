@@ -1,0 +1,3 @@
+CONTRAIL_DRIVER_CONTROLLER='10.10.1.247'
+CONTRAIL_DRIVER_PORT=8082
+NEUTRON_ENTRY_POINTS='/opt/stack/neutron/neutron.egg-info/entry_points.txt'

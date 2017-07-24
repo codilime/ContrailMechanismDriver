@@ -6,12 +6,9 @@ Contrail ML2 Mechanism Driver for [Gluon](https://wiki.openstack.org/wiki/Gluon 
 Dependencies
 ============
 
-* https://github.com/Juniper/contrail-python-api
-	```sh
-	git clone https://github.com/Juniper/contrail-python-api
-	cd contrail-python-api
-	sudo python setup.py install
-	```
+Contrail node
+-------------
+
 * https://github.com/openstack/neutron
 	```sh
 	git clone https://github.com/openstack/neutron
@@ -23,12 +20,38 @@ Dependencies
 	sudo pip install ./nova
 	```
 
+OpenStack node
+--------------
+
+* https://github.com/Juniper/contrail-python-api
+	```sh
+	git clone https://github.com/Juniper/contrail-python-api
+	cd contrail-python-api
+	sudo python setup.py install
+	```
+
+* `vnc_api` and `cfgm_common`. They are not available as standalone packages, so the best idea is to search for
+	`api-lib/dist/vnc_api-0.1.dev0.tar.gz` and `config/common/dist/cfgm_common-0.1.dev0.tar.gz` in
+	your Contrail build directory and copy those files to OpenStack server. They
+	are located on Contrail node after successful Contrail build. Then issue
+	```sh
+	sudo pip install vnc_api-0.1.dev0.tar.gz
+	sudo pip install cfgm_common-0.1.dev0.tar.gz
+	```
+
+* https://github.com/Juniper/contrail-neutron-plugin
+	```sh
+	git clone https://github.com/Juniper/contrail-neutron-plugin.git
+	sudo pip install ./contrail-neutron-plugin
+	```
+
 Installation
 ============
 
 Prerequisites
 -------------
-In order to ContrailMechanismDriver to work correctly, you will need operational **OpenStack** node with Gluon installed.
+In order to ContrailMechanismDriver to work correctly, you will need operational **OpenStack** node.
+Here is [instruction](./devstack-install.md) how to get it working.
 
 There are two possible use cases.
 * All-in-one installation - Contrail is on same node as OpenStack
@@ -41,7 +64,7 @@ _Note:_ `CONTRAIL_SRC_DIR` _is_ `/opt/stack/contrail` _when using_ **Contrail-in
 1. Install Contrail
 	If you don't have Contrail binary packages you can compile it from sources. Probably the easiest way is to use [Contrail-installer](https://github.com/Juniper/contrail-installer)
 
-	_Please note that it is not guaranteed that contrail-installer install all needed dependant libraries. Below list presents libraries neede by Contrail and not installed by contrail-installer._
+	_Please note that it is not guaranteed that contrail-installer install all needed dependant libraries. Below list presents libraries needed by Contrail and not installed by contrail-installer._
 	
 	Libraries (via apt-get install):
 	* libcrypto++-dev
@@ -62,7 +85,6 @@ _Note:_ `CONTRAIL_SRC_DIR` _is_ `/opt/stack/contrail` _when using_ **Contrail-in
 	* In file `$CONTRAIL_SRC_DIR/contrail-web-core/config/config.global.js` replace entry `config.identityManager.ip` to point to **OpenStack node**
 	* In file `$CONTRAIL_SRC_DIR/contrail-web-core/config/config.global.js` replace entry `config.featurePkg.webController.path` to `'$CONTRAIL_SRC_DIR/contrail-web-controller';`
 4. Verify that Contrail is working correctly
-5. Install [contrail-python-api](https://github.com/Juniper/contrail-python-api)
 
 _Note:_ There is experimental script that tries to install Contrail as a standalone node. Script is located in [contrail-install.sh](./util/contrail-install.sh).
 
@@ -74,11 +96,17 @@ Dependencies will be installed automatically.
 Make sure that devstack is installed with ML2 enabled by adding `Q_PLUGIN=ml2` to `local.conf`.
 Enable Contrail and ContrailMechanismDriver by adding
 ```
+Q_PLUGIN=ml2
+
+# Options below are optional, with following default values
+CONTRAIL_DRIVER_CONTROLLER='127.0.0.1'
+CONTRAIL_DRIVER_PORT=8082
+
 enable_plugin contrail https://github.com/zioc/contrail-devstack-plugin.git
 enable_plugin contrail-mechanism-driver https://github.com/codilime/ContrailMechanismDriver
 ```
 to `local.conf` file in devstack.
-Then siply run `./stack.sh`.
+Then simply run `./stack.sh`.
 
 Manual installation - (All-in-one installation)
 -----------------------------------------------

@@ -6,12 +6,9 @@ Contrail ML2 Mechanism Driver for [Gluon](https://wiki.openstack.org/wiki/Gluon 
 Dependencies
 ============
 
-* https://github.com/Juniper/contrail-python-api
-	```sh
-	git clone https://github.com/Juniper/contrail-python-api
-	cd contrail-python-api
-	sudo python setup.py install
-	```
+Contrail node
+-------------
+
 * https://github.com/openstack/neutron
 	```sh
 	git clone https://github.com/openstack/neutron
@@ -21,6 +18,30 @@ Dependencies
 	```sh
 	git clone https://github.com/openstack/nova
 	sudo pip install ./nova
+	```
+
+OpenStack node
+--------------
+
+* https://github.com/Juniper/contrail-python-api
+	```sh
+	git clone https://github.com/Juniper/contrail-python-api
+	cd contrail-python-api
+	sudo python setup.py install
+	```
+
+* `vnc_api` and `cfgm_common`. They are not available as standalone packages, so the best idea is to search for
+	`api-lib/dist/vnc_api-0.1.dev0.tar.gz` and `config/common/dist/cfgm_common-0.1.dev0.tar.gz` in
+	your Contrail build directory and then copy these files to OpenStack server. Then issue
+	```sh
+	sudo pip install vnc_api-0.1.dev0.tar.gz
+	sudo pip install cfgm_common-0.1.dev0.tar.gz
+	```
+
+* https://github.com/Juniper/contrail-neutron-plugin
+	```sh
+	git clone https://github.com/Juniper/contrail-neutron-plugin.git
+	sudo pip install ./contrail-neutron-plugin
 	```
 
 Installation
@@ -62,7 +83,9 @@ _Note:_ `CONTRAIL_SRC_DIR` _is_ `/opt/stack/contrail` _when using_ **Contrail-in
 	* In file `$CONTRAIL_SRC_DIR/contrail-web-core/config/config.global.js` replace entry `config.identityManager.ip` to point to **OpenStack node**
 	* In file `$CONTRAIL_SRC_DIR/contrail-web-core/config/config.global.js` replace entry `config.featurePkg.webController.path` to `'$CONTRAIL_SRC_DIR/contrail-web-controller';`
 4. Verify that Contrail is working correctly
-5. Install [contrail-python-api](https://github.com/Juniper/contrail-python-api)
+5. Install listed dependencies in OpenStack node
+6. Copy `neutron` directory from the repository to `$OpenStack/neutron`, so the plugin is in `$OpenStack/neutron/neutron/plugins/ml2/drivers/contrail_driver.py`
+7. Configure ML2 mechanism driver
 
 _Note:_ There is experimental script that tries to install Contrail as a standalone node. Script is located in [contrail-install.sh](./util/contrail-install.sh).
 

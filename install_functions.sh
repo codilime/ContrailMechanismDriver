@@ -46,9 +46,10 @@ install_plugin()
 {
 	[ -z "$1" ] && { echo "Missing argument for \`install_plugin' function: missing OpenStack install directory"; exit 2; }
 	OpenStack="$1"
-	{ date; echo "Copying plugin (whole dir: $MainDir/neutron) into $OpenStack"; ls -al "$MainDir/neutron"; } >> /tmp/congl.log; 
-	
+	{ date; echo "Copying plugin (whole dir: $MainDir/neutron) into $OpenStack"; ls -al "$MainDir/neutron"; } >> /tmp/congl.log;
+
 	sudo cp -dR "$MainDir/neutron" "$OpenStack"/
+	sudo cp -dR "$MainDir/neutron" "$OpenStack"/neutron
 }
 
 configure_plugin()

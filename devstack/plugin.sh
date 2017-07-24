@@ -20,8 +20,22 @@ setup_stack()
 
 		"post-config")
 			source "$NEUTRON_DIR/devstack/plugin.sh"
-			source "$NEUTRON_DIR/devstack/lib/ml2" contrail_driver
-			enable_ml2_extension_driver
+
+			# Insert extension driver
+			local drivers=""
+			drivers=$(iniget $NEUTRON_CORE_PLUGIN_CONF ml2 mechanism_drivers)
+			if [ $drivers ]; then
+				drivers+=","
+			fi
+			drivers+="contrail_driver"
+			iniset $NEUTRON_CORE_PLUGIN_CONF ml2 mechanism_drivers $drivers
+
+			# Configuring driver
+			iniset $NEUTRON_CORE_PLUGIN_CONF ml2_driver_contrail controller $CONTRAIL_DRIVER_CONTROLLER
+			iniset $NEUTRON_CORE_PLUGIN_CONF ml2_driver_contrail port $CONTRAIL_DRIVER_PORT
+
+			# Adding driver to runtime
+			iniset $NEUTRON_ENTRY_POINTS 'neutron.ml2.mechanism_drivers' 'contrail_driver' 'neutron.plugins.ml2.drivers.contrail_driver:ContrailMechanismDriver'
 			;;
 
 		"extra")
@@ -51,7 +65,7 @@ case "$MODE" in
 	"clean")
 		# nothing to do
 		;;
-	
+
 	*)
 		echo "Unhandled option: $MODE";
 		exit 0

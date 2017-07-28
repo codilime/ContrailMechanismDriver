@@ -20,6 +20,10 @@ Contrail node
 	sudo pip install ./nova
 	```
 
+You probably won't be installing those dependencies directly because in
+such case config files are not created. They can be installed with help
+of DevStack. Please see [this instruction](./nova-setup.md).
+
 OpenStack node
 --------------
 
@@ -132,6 +136,8 @@ Configuring ML2 mechanism driver
 Running
 =======
 
-Neutron service need to be restarted
+Neutron service (`neutron-server`) need to be restarted
 
 * For **devstack** another config file must be supplied to neutron by adding `--config-file /etc/neutron/plugins/ml2/ml2_conf.ini` to commandline
+
+Nova service (`nova-compute`) must be set up. Make sure that vrouter is

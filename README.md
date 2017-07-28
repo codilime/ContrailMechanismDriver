@@ -136,8 +136,15 @@ Configuring ML2 mechanism driver
 Running
 =======
 
+OpenStack node
+--------------
+
 Neutron service (`neutron-server`) need to be restarted
 
 * For **devstack** another config file must be supplied to neutron by adding `--config-file /etc/neutron/plugins/ml2/ml2_conf.ini` to commandline
 
-Nova service (`nova-compute`) must be set up. Make sure that vrouter is
+Contrail - compute node
+-----------------------
+
+Nova service (`nova-compute`) must be set up and running. It is done by default
+by DevStack. Make sure that vrouter kernel module is loaded and vrouter-agent is running.

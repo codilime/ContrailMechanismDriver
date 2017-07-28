@@ -26,7 +26,18 @@ OpenStack environment (with ContrailMechanismDriver enabled).
 	enable_plugin contrail-mechanism-driver https://github.com/zhtk/ContrailMechanismDriver.git
 	```
 
-3. Run `./stack.sh`
+3. If You have defined your own `Q_ML2_PLUGIN_MECHANISM_DRIVERS` variable
+	in `local.conf` then make sure, that `contrail_driver` doesn't appear
+	inside. Otherwise you **will** face very strange errors and you will have to
+	perform configuration manually.
+	All configuration related to this mechanism driver will be done automatically
+	during installation phase.
 
-Now you should have running OpenStack environment and *no further configuration
-is needed*.
+4. Run `./stack.sh`
+
+5. Check if `contrail_driver` is loaded and no errors are visible.
+	`cat /opt/stack/logs/q-svc.log | grep contrail_driver` should be
+	sufficient.
+
+Now you should have running OpenStack environment and **no further configuration
+should be needed**.

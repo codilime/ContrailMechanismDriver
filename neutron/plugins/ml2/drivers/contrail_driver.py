@@ -22,8 +22,14 @@ from vnc_api import vnc_api
 
 from cfgm_common import exceptions as vnc_exc
 from neutron.common.config import cfg
-from neutron.common import constants as n_const
-from neutron.extensions import portbindings
+try:
+    from neutron_lib import constants as n_const
+except:
+    from neutron.common import constants as n_const
+try:
+    from neutron_lib.api.definitions import portbindings
+except:
+    from neutron.extensions import portbindings
 from neutron.plugins.ml2 import driver_api as api
 from neutron_plugin_contrail.plugins.opencontrail.vnc_client import (
     sg_res_handler
@@ -71,9 +77,18 @@ def dump(obj):
 
 def clear_null_keys(dic):
     """Remove all keys with None value from dict."""
+    deleted_keys = []
     for key in dic.keys():
         if dic[key] is None:
             del dic[key]
+            deleted_keys.append(key)
+    return deleted_keys
+
+
+def restore_null_keys(keys, dic):
+    """ Set keys in dict to None """
+    for key in keys:
+        dic[key] = None
 
 
 def get_dict_diff(base, update):
@@ -400,8 +415,11 @@ class ContrailMechanismDriver(api.MechanismDriver):
         # This is required because Contrail does not check if value for given
         # key is None, it checks only if key exists (eg. ipv6_address_mode key
         # exists when creating subnet)
-        clear_null_keys(data)
+        null_keys = clear_null_keys(data)
         self.subnet_resource_create(data)
+        # Null keys must be restored, otherwise other plugins may fail and
+        # will prevent network creation
+        restore_null_keys(null_keys, data)
 
     def create_subnet_postcommit(self, context):
         """Create a subnet.

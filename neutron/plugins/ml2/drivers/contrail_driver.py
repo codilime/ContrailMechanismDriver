@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 from enum import Enum
+import inspect
 import netaddr
 import sys
 import time
@@ -30,6 +31,10 @@ try:
     from neutron_lib.api.definitions import portbindings
 except:
     from neutron.extensions import portbindings
+try:
+    from neutron_lib.exceptions import NeutronException, NetworkNotFound
+except:
+    from neutron.common.exceptions import NeutronException, NetworkNotFound
 from neutron.plugins.ml2 import driver_api as api
 from neutron_plugin_contrail.plugins.opencontrail.vnc_client import (
     sg_res_handler
@@ -257,8 +262,26 @@ class ContrailMechanismDriver(api.MechanismDriver):
                     (sys._getframe().f_code.co_name, dump(context)))
 
         vnh = self.handlers[Hndl.VirtualNetwork]
-        vn_obj = vnh.neutron_dict_to_vn(
-            vnh._get_vn_obj_from_net_q(context.current), context.current)
+        try:
+            vn_obj = vnh.neutron_dict_to_vn(
+                vnh._get_vn_obj_from_net_q(context.current), context.current)
+        except NetworkNotFound:
+            return
+        except NeutronException:
+            # Very ugly hack for bug in Contrail library which incorrectly
+            # reports exceptions. The bug occurs in vn_res_handler.py placed
+            # inside neutron_plugin_contrail library. Incorrect exception
+            # is thrown in function _get_vn_obj_from_net_q, in file
+            # neutron_plugin_contrail/plugins/opencontrail/vnc_client/vn_res_handler.py,
+            # line 238. If we haven't caught this exception, it's reraised.
+            # We traverse stack trace to see if mentioned error happened
+            # and check for specific keywords indicating where exception
+            # was thrown
+            trace = inspect.trace()
+            for line in trace:
+                if "vn_res_handler.py" in line[1] and line[3] == "_get_vn_obj_from_net_q":
+                    return
+            raise
         vnh._resource_update(vn_obj)
 
     def update_network_postcommit(self, context):

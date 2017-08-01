@@ -714,8 +714,19 @@ class ContrailMechanismDriver(api.MechanismDriver):
         logger.info(
             "Function '%s' context is: %s" %
             (sys._getframe().f_code.co_name, dump(context)))
+
+        # DIRTY TEMPORARY HACKS - XXX:
+        # There is a bug in neutron which causes port creation failure:
+        # https://bugs.launchpad.net/neutron/+bug/1464806
+        # Contrail expects tenant_id to be non-empty because it's used
+        # to get a project UUID. We applied workaround proposed here:
+        # https://bugs.launchpad.net/networking-odl/+bug/1464807
+        # We set port's tenant_id to tenant_id of network present in context
+        if context.current['tenant_id'] == '':
+            logger.debug('create_port_precommit: tenant_id is empty')
+            context.current['tenant_id'] = context._network_context._network['tenant_id']
+
         self.port_resource_create(context.current)
-        pass
 
     def create_port_postcommit(self, context):
         """Create a port.

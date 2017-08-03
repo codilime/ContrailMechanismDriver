@@ -1,0 +1,34 @@
+---
+# Playbook initialize VM for further installation steps
+- hosts: "{{ group }}"
+  remote_user: ubuntu
+  become: yes
+  become_method: sudo 
+  gather_facts: no
+
+  vars_files:
+    - vars/default_vars.yml
+
+  tasks:
+
+  - name: install ssh key on VM
+    authorized_key: user=ubuntu 
+                    key={{ lookup('file', '~/.ssh/id_rsa.pub') }} 
+                    state=present
+    become: no
+
+  - include: tasks/nameserver.yml
+
+  - include: tasks/hostname.yml
+
+  - name: update cache 
+    command: apt update
+
+  - name: install python-apt & python-setuptools
+    command: apt install {{ item }} -y 
+    with_items:
+      - "python-apt"
+      - "python-setuptools"
+      - "python-pip"
+
+  - include: tasks/install_git.yml

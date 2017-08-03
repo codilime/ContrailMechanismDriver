@@ -1,0 +1,12 @@
+---
+# install supported kernel version
+- name: install supported kernel version
+  apt:
+    name: "{{ item }}"
+    update_cache: yes
+    cache_valid_time: 3600
+  with_items:
+    - "linux-image-{{ kernel_version }}-generic"
+    - "linux-headers-{{ kernel_version }}-generic"
+  become: yes
+  become_method: sudo

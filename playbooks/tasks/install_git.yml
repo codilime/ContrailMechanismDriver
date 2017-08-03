@@ -1,0 +1,11 @@
+---
+# install git
+- name: install git
+  apt:
+    name: "{{ item }}"
+    update_cache: yes
+    cache_valid_time: 3600
+  with_items:
+    - "git"
+  become: yes
+  become_method: sudo

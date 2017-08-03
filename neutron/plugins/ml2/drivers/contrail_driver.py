@@ -22,7 +22,10 @@ import requests
 from vnc_api import vnc_api
 
 from cfgm_common import exceptions as vnc_exc
+# WARNING: Don't import from neutron_lib, it won't work!
+from neutron.callbacks import registry, resources, events
 from neutron.common.config import cfg
+from neutron.extensions.securitygroup import SecurityGroupNotFound
 try:
     from neutron_lib import constants as n_const
 except:
@@ -115,6 +118,144 @@ class Hndl(Enum):
     SGRule = 5
 
 
+class ContrailSecurityGroupHook:
+    """Security Group Hook"""
+    def __init__(self, handlers):
+        self.handlers = handlers
+        self.listen()
+
+    def listen(self):
+        registry.subscribe(self.create_security_group,
+                           resources.SECURITY_GROUP,
+                           events.AFTER_CREATE)
+        registry.subscribe(self.update_security_group,
+                           resources.SECURITY_GROUP,
+                           events.AFTER_UPDATE)
+        registry.subscribe(self.delete_security_group,
+                           resources.SECURITY_GROUP,
+                           events.BEFORE_DELETE)
+        registry.subscribe(self.create_security_group_rule,
+                           resources.SECURITY_GROUP_RULE,
+                           events.AFTER_CREATE)
+        registry.subscribe(self.delete_security_group_rule,
+                           resources.SECURITY_GROUP_RULE,
+                           events.BEFORE_DELETE)
+
+    def create_security_group(self, resource, event, trigger, **kwargs):
+        """Event executed when security group is created.
+
+        :param resource: Always set to resources.SECURITY_GROUP.
+        :param event: Always set to events.AFTER_CREATE.
+        :param trigger: Caller which invoked hook.
+        :param kwargs: Dictionary with keys: context, is_default, security_group.
+        """
+        try:
+            uuid = kwargs['security_group']['id']
+            self.handlers[Hndl.SecurityGroup].resource_get(None, uuid)
+            logger.error("Security group exists: %s" % str(uuid))
+            return
+        except SecurityGroupNotFound:
+            logger.debug("SecurityGroupNotFound: %s" % uuid)
+
+        context = kwargs['context']
+        sg = kwargs['security_group']
+        handler = self.handlers[Hndl.SecurityGroup]
+
+        # Security group have to be created manually because its uuid must
+        # be the same on both OpenStack and Contrail endpoints
+        contrail_sg = handler._create_security_group(sg)
+        sg_obj = handler._security_group_neutron_to_vnc(sg, contrail_sg)
+        sg_obj.uuid = uuid
+        sg_uuid = handler._resource_create(sg_obj)
+
+        if sg_uuid != uuid:
+            logger.error("Contrail UUID (%s) and Stack UUID (%s) doesn't match!" %
+                (sg_uuid, uuid))
+            raise ReferenceError(
+                "SG _resource_create returned object withd different uuid:"
+                " %s (expected was %s" % (sg_uuid, uuid))
+
+        #allow all egress traffic
+        def_rule = {}
+        def_rule['port_range_min'] = 0
+        def_rule['port_range_max'] = 65535
+        def_rule['direction'] = 'egress'
+        def_rule['remote_ip_prefix'] = '0.0.0.0/0'
+        def_rule['remote_group_id'] = None
+        def_rule['protocol'] = 'any'
+        def_rule['ethertype'] = 'IPv4'
+        def_rule['security_group_id'] = sg_uuid
+        def_rule['tenant_id'] = sg['tenant_id']
+        self.handlers[Hndl.SGRule].resource_create(context, def_rule)
+
+        def_rule = {}
+        def_rule['port_range_min'] = 0
+        def_rule['port_range_max'] = 65535
+        def_rule['direction'] = 'egress'
+        def_rule['remote_ip_prefix'] = '::/0'
+        def_rule['remote_group_id'] = None
+        def_rule['protocol'] = 'any'
+        def_rule['ethertype'] = 'IPv6'
+        def_rule['security_group_id'] = sg_uuid
+        def_rule['tenant_id'] = sg['tenant_id']
+        self.handlers[Hndl.SGRule].resource_create(context, def_rule)
+
+    def update_security_group(self, resource, event, trigger, **kwargs):
+        """Event executed when security group is updated.
+
+        :param resource: Always set to resources.SECURITY_GROUP.
+        :param event: Always set to events.AFTER_UPDATE.
+        :param trigger: Caller which invoked hook.
+        :param kwargs: Dictionary with keys: context, security_group,
+                       security_group_id.
+        """
+        context = kwargs['context']
+        sg = kwargs['security_group']
+        self.handlers[Hndl.SecurityGroup].resource_update(context, sg['id'], sg)
+
+    def delete_security_group(self, resource, event, trigger, **kwargs):
+        """Event executed when security group is deleted.
+
+        :param resource: Always set to resources.SECURITY_GROUP.
+        :param event: Always set to events.BEFORE_DELETE.
+        :param trigger: Caller which invoked hook.
+        :param kwargs: Dictionary with keys: context, security_group,
+                       security_group_id.
+        """
+        context = kwargs['context']
+        sg = kwargs['security_group_id']
+        self.handlers[Hndl.SecurityGroup].resource_delete(context, sg)
+
+    def create_security_group_rule(self, resource, event, trigger, **kwargs):
+        """Event executed when security group rule is created.
+
+        :param resource: Always set to resources.SECURITY_GROUP_RULE.
+        :param event: Always set to events.AFTER_CREATE.
+        :param trigger: Caller which invoked hook.
+        :param kwargs: Dictionary with keys: context, security_group_rule.
+        """
+        context = kwargs['context']
+        rule = kwargs['security_group_rule']
+        handler = self.handlers[Hndl.SGRule]
+
+        handler.resource_create(context, rule)
+
+    def delete_security_group_rule(self, resource, event, trigger, **kwargs):
+        """Event executed when security group rule is deleted.
+
+        :param resource: Always set to resources.SECURITY_GROUP_RULE.
+        :param event: Always set to events.BEFORE_DELETE.
+        :param trigger: Caller which invoked hook.
+        :param kwargs: Dictionary with keys: context, security_group_id,
+                                             security_group_rule_id.
+        """
+        context = kwargs['context'].to_dict()
+        rule = kwargs['security_group_rule_id']
+        handler = self.handlers[Hndl.SGRule]
+
+        handler.resource_delete(context, rule)
+
+
 class ContrailMechanismDriver(api.MechanismDriver):
 
     def initialize(self):
@@ -200,6 +341,7 @@ class ContrailMechanismDriver(api.MechanismDriver):
             sg_res_handler.SecurityGroupHandler(self._vnc_lib),
             Hndl.SGRule: sgrule_handler.SecurityGroupRuleHandler(self._vnc_lib)
         }
+        self.security_hook = ContrailSecurityGroupHook(self.handlers)
 
     def create_network_precommit(self, context):
         """Allocate resources for a new network.

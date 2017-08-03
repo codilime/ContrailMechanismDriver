@@ -1,0 +1,19 @@
+---
+# Variables used for local.conf on OpenContrail VM
+
+service_token: azertytokenX
+admin_pass: contrail123
+
+# IP address for OpenConrail VM and OpenStack controller VM
+contrail_ip: 192.168.14.110
+openstack_ip: 192.168.14.108
+
+# Branches used to build OpenContrail VM
+openstack_branch: stable/newton
+contrail_branch: R3.2.3.x
+
+# Kernel version supported by OpenContrail release
+kernel_version: 3.13.0-85
+
+# Contrail VM hostname
+hostname: pr-contrail4

@@ -1,0 +1,16 @@
+---
+# Variables used for local.conf on Openstack VM
+
+service_token: azertytokenX
+admin_pass: contrail123
+
+# IP address for OpenConrail VM and OpenStack controller VM
+openstack_ip: 192.168.14.108
+contrail_ip: 192.168.14.110
+contrail_port: 8082
+
+# Branches used to set up Openstack VM
+openstack_branch: stable/newton
+
+# Openstack VM hostname
+hostname: pr-devstack

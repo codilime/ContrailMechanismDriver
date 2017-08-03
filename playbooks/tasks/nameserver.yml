@@ -1,0 +1,8 @@
+---
+# configure nameserver in VM
+- name: configure nameserver
+  template: 
+    src: resolv.conf.j2 
+    dest: /run/resolvconf/resolv.conf
+  become: yes
+  become_method: sudo

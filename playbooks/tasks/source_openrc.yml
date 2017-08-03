@@ -1,0 +1,8 @@
+---
+# source openrc in bash profile
+- name: source openrc in profile
+  lineinfile: 
+    dest: ~/.profile 
+    regexp: ".*openrc" 
+    line: ". ~/devstack/openrc"
+    state: present

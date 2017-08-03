@@ -68,22 +68,22 @@ configure_plugin()
 	
 	# Insert extension driver
 	local drivers=""
-	drivers=$(sudo iniget $NEUTRON_CORE_PLUGIN_CONF ml2 mechanism_drivers)
+	drivers=$(sudo crudini --get $NEUTRON_CORE_PLUGIN_CONF ml2 mechanism_drivers)
 	if [ $drivers ]; then
 		drivers+=","
 	fi
 	drivers+="contrail_driver"
-	sudo iniset $NEUTRON_CORE_PLUGIN_CONF ml2 mechanism_drivers $drivers
+	sudo crudini --set $NEUTRON_CORE_PLUGIN_CONF ml2 mechanism_drivers $drivers
 
 	# Configure driver
-	sudo iniset $NEUTRON_CORE_PLUGIN_CONF ml2_driver_contrail controller $CONTRAIL_DRIVER_CONTROLLER
-	sudo iniset $NEUTRON_CORE_PLUGIN_CONF ml2_driver_contrail port $CONTRAIL_DRIVER_PORT
+	sudo crudini --set $NEUTRON_CORE_PLUGIN_CONF ml2_driver_contrail controller $CONTRAIL_DRIVER_CONTROLLER
+	sudo crudini --set $NEUTRON_CORE_PLUGIN_CONF ml2_driver_contrail port $CONTRAIL_DRIVER_PORT
 
 	# Add driver to runtime
 	EntryPoints='/opt/stack/neutron/neutron.egg-info/entry_points.txt'
 	[ ! -e "$EntryPoints" ] && EntryPoints=$(locate_entry_points)
 	[ ! -e "$EntryPoints" ] && { echo "Can't find entry_points file: $EntryPoints - Aborting!"; exit 2; }
 	[ ! -z "$BakSuffix" ] && sudo cp "$EntryPoints" "$EntryPoints$BakSuffix"
-	sudo iniset "$EntryPoints" neutron.ml2.mechanism_drivers contrail_driver neutron.plugins.ml2.drivers.contrail_driver:ContrailMechanismDriver
+	sudo crudini --set "$EntryPoints" neutron.ml2.mechanism_drivers contrail_driver neutron.plugins.ml2.drivers.contrail_driver:ContrailMechanismDriver
 }
 

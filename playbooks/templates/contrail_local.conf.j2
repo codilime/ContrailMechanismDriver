@@ -1,0 +1,35 @@
+# {{ ansible_managed }}
+[[local|localrc]]
+SERVICE_TOKEN={{ service_token }}
+HOST_IP={{ contrail_ip }}
+SERVICE_HOST={{ openstack_ip }}
+MULTI_HOST={{ multihost }}
+LOGFILE=/opt/stack/logs/stack.sh.log
+LOGDAYS=1
+ADMIN_PASSWORD={{ admin_pass }}
+DATABASE_PASSWORD=$ADMIN_PASSWORD
+RABBIT_PASSWORD=$ADMIN_PASSWORD
+SERVICE_PASSWORD=$ADMIN_PASSWORD
+
+#Newton Branches
+NOVA_BRANCH={{ openstack_branch }}
+#CINDER_BRANCH={{ openstack_branch }}
+#GLANCE_BRANCH={{ openstack_branch }}
+#HORIZON_BRANCH={{ openstack_branch }}
+#KEYSTONE_BRANCH={{ openstack_branch }}
+NEUTRON_BRANCH={{ openstack_branch }}
+#KEYSTONECLIENT_BRANCH={{ openstack_branch }}
+
+MYSQL_HOST=$SERVICE_HOST
+RABBIT_HOST=$SERVICE_HOST
+Q_HOST=$SERVICE_HOST
+ENABLED_SERVICES=n-cpu,neutron,vrouter,api-srv,disco,svc-mon,schema,control,collector,analytic-api,query-engine,dns,named,ui-jobs,ui-webs,alarm-gen
+#starting from Ocata release placement-api has to be enabled as well
+#ENABLED_SERVICES=n-cpu,neutron,placement-api,vrouter,api-srv,disco,svc-mon,schema,control,collector,analytic-api,query-engine,dns,named,ui-jobs,ui-webs,alarm-gen
+
+NEUTRON_CREATE_INITIAL_NETWORKS={{ create_initial_networks }}
+
+CONTRAIL_BRANCH={{ contrail_branch }}
+CONTRAIL_PATCHES='contrail_patches'
+CONFIG_IP=$HOST_IP
+enable_plugin contrail https://github.com/zioc/contrail-devstack-plugin.git

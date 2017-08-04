@@ -8,7 +8,7 @@
   gather_facts: yes 
 
   vars_files:
-    - vars/all.yml
+    - group_vars/all.yml
 
   tasks:
 

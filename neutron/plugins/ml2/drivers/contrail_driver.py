@@ -152,7 +152,7 @@ class ContrailSecurityGroupHook:
         try:
             uuid = kwargs['security_group']['id']
             self.handlers[Hndl.SecurityGroup].resource_get(None, uuid)
-            logger.error("Security group exists: %s" % str(uuid))
+            logger.error("Security group %s already exist, can't create" % str(uuid))
             return
         except SecurityGroupNotFound:
             logger.debug("SecurityGroupNotFound: %s" % uuid)
@@ -175,30 +175,19 @@ class ContrailSecurityGroupHook:
                 "SG _resource_create returned object withd different uuid:"
                 " %s (expected was %s" % (sg_uuid, uuid))
 
-        #allow all egress traffic
-        def_rule = {}
-        def_rule['port_range_min'] = 0
-        def_rule['port_range_max'] = 65535
-        def_rule['direction'] = 'egress'
-        def_rule['remote_ip_prefix'] = '0.0.0.0/0'
-        def_rule['remote_group_id'] = None
-        def_rule['protocol'] = 'any'
-        def_rule['ethertype'] = 'IPv4'
-        def_rule['security_group_id'] = sg_uuid
-        def_rule['tenant_id'] = sg['tenant_id']
-        self.handlers[Hndl.SGRule].resource_create(context, def_rule)
+        for rule in sg['security_group_rules']:
+            if rule.get('protocol') is None:
+                rule['protocol'] = 'any'
 
-        def_rule = {}
-        def_rule['port_range_min'] = 0
-        def_rule['port_range_max'] = 65535
-        def_rule['direction'] = 'egress'
-        def_rule['remote_ip_prefix'] = '::/0'
-        def_rule['remote_group_id'] = None
-        def_rule['protocol'] = 'any'
-        def_rule['ethertype'] = 'IPv6'
-        def_rule['security_group_id'] = sg_uuid
-        def_rule['tenant_id'] = sg['tenant_id']
-        self.handlers[Hndl.SGRule].resource_create(context, def_rule)
+            if (rule.get('remote_ip_prefix') is None
+                and rule.get('ethertype') == 'IPv4'):
+                rule['remote_ip_prefix'] = '0.0.0.0/0'
+
+            if (rule.get('remote_ip_prefix') is None
+                and rule.get('ethertype') == 'IPv6'):
+                rule['remote_ip_prefix'] = '::/0'
+
+            self.handlers[Hndl.SGRule].resource_create(context, rule)
 
     def update_security_group(self, resource, event, trigger, **kwargs):
         """Event executed when security group is updated.

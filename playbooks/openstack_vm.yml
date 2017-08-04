@@ -1,0 +1,38 @@
+---
+# Playbook for setting up Openstack VM
+- name: get driver dependencies from Contrail VM
+  hosts: contrail
+  become: yes
+  become_method: sudo
+  remote_user: ubuntu
+  connection: ssh
+  gather_facts: yes 
+
+  tasks:
+  
+  - include: tasks/copy_drv_depend.yml  
+
+- name: Setup Openstack VM
+  hosts: openstack 
+  become: no
+  remote_user: ubuntu
+  connection: ssh
+  gather_facts: no 
+
+  vars_files:
+    - vars/default_vars.yml
+    - vars/openstack_vars.yml
+
+  tasks:
+
+  - include: tasks/prepare_devstack.yml vm_group=openstack
+  
+  - include: tasks/openstack_patch.yml
+    
+  - include: tasks/install_drv_depend.yml
+  
+  - name: build Openstack via stack.sh 
+    command: chdir=~/devstack ./stack.sh
+    ignore_errors: no 
+
+  - include: tasks/source_openrc.yml 

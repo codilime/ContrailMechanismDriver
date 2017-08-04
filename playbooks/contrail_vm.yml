@@ -1,0 +1,45 @@
+---
+# Playbook setting up OpenContrail VM
+- name: Setup OpenContrail VM
+  hosts: contrail
+  become: no
+  remote_user: ubuntu
+  connection: ssh
+  gather_facts: yes 
+
+  vars_files:
+    - vars/default_vars.yml
+    - vars/contrail_vars.yml
+
+  tasks:
+
+  - include: tasks/install_kernel.yml
+
+  - name: reboot VM to boot with newly installed kernel
+    command: shutdown -r now "Ansible updates triggered" removes=/var/run/reboot-required
+    # shell: sleep 3 && shutdown -r now "Ansible updates triggered"
+    async: 0
+    poll: 0
+    become: yes
+    become_method: sudo
+    register: restarted
+
+  - name: wait for SSH on VM
+    local_action: shell ssh {{ inventory_hostname }} true
+    register: result
+    until: result|success
+    retries: 30
+    delay: 10
+    when: restarted.changed
+
+  - include: tasks/nameserver.yml 
+
+  - include: tasks/prepare_devstack.yml vm_group=contrail
+
+  - include: tasks/contrail_patches.yml
+  
+  - name: build OpenContrail via stack.sh 
+    command: chdir=~/devstack ./stack.sh
+    ignore_errors: no 
+
+  - include: tasks/source_openrc.yml 

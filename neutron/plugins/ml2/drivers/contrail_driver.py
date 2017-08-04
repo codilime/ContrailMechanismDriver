@@ -167,27 +167,17 @@ class ContrailSecurityGroupHook(NeutronDbPluginV2, SecurityGroupDbMixin):
         for rule in old_rules or []:
             rule_handler.resource_delete(context.to_dict(), rule['id'])
 
-    def sync_default_group(self, context, group):
-        project_id = group['tenant_id']
+    def sync_group(self, context, group):
+        logger.info("Syncing group: [name: %s, id: %s, tenant: %s]" % (
+            group['name'], group['id'], group['tenant_id']))
 
-        if project_id == '':
+        if group['tenant_id'] == '':
             return
 
-        handler = self.handlers[Hndl.SecurityGroup]
-        contrail_sg = handler._ensure_default_security_group_exists(project_id)
+        group['id'] = self.get_contrail_security_group_id(context,
+                                                          group['id'])
 
-        self.delete_group_rules(context, contrail_sg)
-
-        for i in group['security_group_rules']:
-            rule = i.copy()
-            rule['security_group_id'] = contrail_sg
-            rule['remote_group_id'] = None
-            self.sync_group_rule(context, rule)
-
-    def sync_group(self, context, group):
-        default_group = (group['name'] == 'default')
-
-        if self.does_security_group_exist(group['id']) and not default_group:
+        if self.does_security_group_exist(group['id']):
             self.update_security_group(None, None, None, context=context,
                                        security_group=group,
                                        security_group_id=group['id'])
@@ -196,18 +186,20 @@ class ContrailSecurityGroupHook(NeutronDbPluginV2, SecurityGroupDbMixin):
 
             for rule in group['security_group_rules']:
                 self.sync_group_rule(context, rule)
-        elif default_group:
-            self.sync_default_group(context, group)
         else:
             self.create_security_group(None, None, None, context=context,
                                        is_default=False, security_group=group)
 
     def sync_security_groups(self):
+        logger.info("Syncing Security Groups with Contrail")
+
         context = neutron_context.get_admin_context()
         groups = self.get_security_groups(context)
 
         for group in groups:
             self.sync_group(context, group)
+
+        logger.info("Finished syncing Security Groups with Contrail")
 
     def does_security_group_exist(self, uuid):
         try:
@@ -215,6 +207,14 @@ class ContrailSecurityGroupHook(NeutronDbPluginV2, SecurityGroupDbMixin):
             return True
         except SecurityGroupNotFound:
             return False
+
+    def get_contrail_security_group_id(self, context, sg_id):
+        handler = self.handlers[Hndl.SecurityGroup]
+        group = self.get_security_group(context, sg_id)
+        if group['name'] == 'default':
+            project_id = group['tenant_id']
+            return handler._ensure_default_security_group_exists(project_id)
+        return sg_id
 
     def create_security_group(self, resource, event, trigger, **kwargs):
         """Event executed when security group is created.
@@ -295,14 +295,23 @@ class ContrailSecurityGroupHook(NeutronDbPluginV2, SecurityGroupDbMixin):
         rule = kwargs['security_group_rule']
         handler = self.handlers[Hndl.SGRule]
 
+        rule['security_group_id'] = self.get_contrail_security_group_id(
+                                         context, rule['security_group_id'])
+
         if rule.get('protocol') is None:
             rule['protocol'] = 'any'
 
+        if rule['remote_group_id'] is not None:
+            rule['remote_group_id'] = self.get_contrail_security_group_id(
+                                           context, rule['remote_group_id'])
+
         if (rule.get('remote_ip_prefix') is None
+            and rule.get('remote_group_id') is None
             and rule.get('ethertype') == 'IPv4'):
             rule['remote_ip_prefix'] = '0.0.0.0/0'
 
         if (rule.get('remote_ip_prefix') is None
+            and rule.get('remote_group_id') is None
             and rule.get('ethertype') == 'IPv6'):
             rule['remote_ip_prefix'] = '::/0'
 

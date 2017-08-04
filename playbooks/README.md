@@ -30,6 +30,8 @@ ansible openstack -i inventory/hosts --sudo -m raw -a 'sed -i_bak "s/\(nameserve
 ansible openstack -i inventory/hosts --sudo -m raw -a "apt install -y python-minimal"
 ```
 
+**Notice:**
+Variables used by configuration templates are stored in *vars* directory so be sure to adjust files according to your setup before running OpenContrail and Devstack VMs playbooks.
 
 Setup OpenContrail VM
 ---------------------

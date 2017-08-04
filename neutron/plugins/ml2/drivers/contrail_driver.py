@@ -25,11 +25,19 @@ from cfgm_common import exceptions as vnc_exc
 # WARNING: Don't import from neutron_lib, it won't work!
 from neutron.callbacks import registry, resources, events
 from neutron.common.config import cfg
-from neutron.extensions.securitygroup import SecurityGroupNotFound
+from neutron.db.db_base_plugin_v2 import NeutronDbPluginV2
+from neutron.db.securitygroups_db import SecurityGroupDbMixin
+from neutron.extensions.securitygroup import (
+    SecurityGroupNotFound, SecurityGroupRuleNotFound
+)
 try:
     from neutron_lib import constants as n_const
 except:
     from neutron.common import constants as n_const
+try:
+    from neutron_lib import context as neutron_context
+except:
+    from neutron import context as neutron_context
 try:
     from neutron_lib.api.definitions import portbindings
 except:
@@ -118,7 +126,7 @@ class Hndl(Enum):
     SGRule = 5
 
 
-class ContrailSecurityGroupHook:
+class ContrailSecurityGroupHook(NeutronDbPluginV2, SecurityGroupDbMixin):
     """Security Group Hook"""
     def __init__(self, handlers):
         self.handlers = handlers
@@ -141,6 +149,73 @@ class ContrailSecurityGroupHook:
                            resources.SECURITY_GROUP_RULE,
                            events.BEFORE_DELETE)
 
+    def sync_group_rule(self, context, rule):
+        try:
+            self.delete_security_group_rule(None, None, None, context=context,
+                                            security_group_rule_id=rule['id'])
+        except SecurityGroupRuleNotFound:
+            pass
+
+        self.create_security_group_rule(None, None, None, context=context,
+                                        security_group_rule=rule)
+
+    def delete_group_rules(self, context, id):
+        sg_handler = self.handlers[Hndl.SecurityGroup]
+        sg_obj = sg_handler.get_sg_obj(id)
+        rule_handler = self.handlers[Hndl.SGRule]
+        old_rules = rule_handler.security_group_rules_read(sg_obj)
+        for rule in old_rules or []:
+            rule_handler.resource_delete(context.to_dict(), rule['id'])
+
+    def sync_default_group(self, context, group):
+        project_id = group['tenant_id']
+
+        if project_id == '':
+            return
+
+        handler = self.handlers[Hndl.SecurityGroup]
+        contrail_sg = handler._ensure_default_security_group_exists(project_id)
+
+        self.delete_group_rules(context, contrail_sg)
+
+        for i in group['security_group_rules']:
+            rule = i.copy()
+            rule['security_group_id'] = contrail_sg
+            rule['remote_group_id'] = None
+            self.sync_group_rule(context, rule)
+
+    def sync_group(self, context, group):
+        default_group = (group['name'] == 'default')
+
+        if self.does_security_group_exist(group['id']) and not default_group:
+            self.update_security_group(None, None, None, context=context,
+                                       security_group=group,
+                                       security_group_id=group['id'])
+
+            self.delete_group_rules(context, group['id'])
+
+            for rule in group['security_group_rules']:
+                self.sync_group_rule(context, rule)
+        elif default_group:
+            self.sync_default_group(context, group)
+        else:
+            self.create_security_group(None, None, None, context=context,
+                                       is_default=False, security_group=group)
+
+    def sync_security_groups(self):
+        context = neutron_context.get_admin_context()
+        groups = self.get_security_groups(context)
+
+        for group in groups:
+            self.sync_group(context, group)
+
+    def does_security_group_exist(self, uuid):
+        try:
+            self.handlers[Hndl.SecurityGroup].resource_get(None, uuid)
+            return True
+        except SecurityGroupNotFound:
+            return False
+
     def create_security_group(self, resource, event, trigger, **kwargs):
         """Event executed when security group is created.
 
@@ -149,17 +224,20 @@ class ContrailSecurityGroupHook:
         :param trigger: Caller which invoked hook.
         :param kwargs: Dictionary with keys: context, is_default, security_group.
         """
-        try:
-            uuid = kwargs['security_group']['id']
-            self.handlers[Hndl.SecurityGroup].resource_get(None, uuid)
-            logger.error("Security group %s already exist, can't create" % str(uuid))
-            return
-        except SecurityGroupNotFound:
-            logger.debug("SecurityGroupNotFound: %s" % uuid)
-
         context = kwargs['context']
         sg = kwargs['security_group']
         handler = self.handlers[Hndl.SecurityGroup]
+
+        if kwargs['is_default']:
+            self.sync_default_group(context, sg)
+            return
+
+        uuid = kwargs['security_group']['id']
+        if self.does_security_group_exist(uuid):
+            logger.error("Security group %s already exist, can't create" % str(uuid))
+            return
+        else:
+            logger.debug("SecurityGroupNotFound %s" % uuid)
 
         # Security group have to be created manually because its uuid must
         # be the same on both OpenStack and Contrail endpoints
@@ -176,18 +254,8 @@ class ContrailSecurityGroupHook:
                 " %s (expected was %s" % (sg_uuid, uuid))
 
         for rule in sg['security_group_rules']:
-            if rule.get('protocol') is None:
-                rule['protocol'] = 'any'
-
-            if (rule.get('remote_ip_prefix') is None
-                and rule.get('ethertype') == 'IPv4'):
-                rule['remote_ip_prefix'] = '0.0.0.0/0'
-
-            if (rule.get('remote_ip_prefix') is None
-                and rule.get('ethertype') == 'IPv6'):
-                rule['remote_ip_prefix'] = '::/0'
-
-            self.handlers[Hndl.SGRule].resource_create(context, rule)
+            self.create_security_group_rule(None, None, None, context=context,
+                                            security_group_rule=rule)
 
     def update_security_group(self, resource, event, trigger, **kwargs):
         """Event executed when security group is updated.
@@ -226,6 +294,17 @@ class ContrailSecurityGroupHook:
         context = kwargs['context']
         rule = kwargs['security_group_rule']
         handler = self.handlers[Hndl.SGRule]
+
+        if rule.get('protocol') is None:
+            rule['protocol'] = 'any'
+
+        if (rule.get('remote_ip_prefix') is None
+            and rule.get('ethertype') == 'IPv4'):
+            rule['remote_ip_prefix'] = '0.0.0.0/0'
+
+        if (rule.get('remote_ip_prefix') is None
+            and rule.get('ethertype') == 'IPv6'):
+            rule['remote_ip_prefix'] = '::/0'
 
         handler.resource_create(context, rule)
 
@@ -331,6 +410,7 @@ class ContrailMechanismDriver(api.MechanismDriver):
             Hndl.SGRule: sgrule_handler.SecurityGroupRuleHandler(self._vnc_lib)
         }
         self.security_hook = ContrailSecurityGroupHook(self.handlers)
+        self.security_hook.sync_security_groups()
 
     def create_network_precommit(self, context):
         """Allocate resources for a new network.

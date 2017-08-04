@@ -34,7 +34,7 @@ ansible openstack -i inventory/hosts --sudo -m raw -a "apt install -y python-min
 Setup OpenContrail VM
 ---------------------
 
-Run *contrail\_vm* playbook (take a cup of with sth to drink and prepare to be patient ;] ):
+Run *contrail\_vm* playbook (it could take few hours to finish):
 
 ```
 ansible-playbook -i inventory/hosts contrail_vm.yml

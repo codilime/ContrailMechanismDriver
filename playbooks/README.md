@@ -1,6 +1,16 @@
 Setup development VMs using Ansible playbooks
 =============================================
 
+Variables used by configuration templates are stored in *vars* directory so be sure to adjust files according to your setup before running OpenContrail and Devstack VMs playbooks.
+
+Prerequisite
+-------------
+If Devstack VM is installed on Ubuntu 16.04 be sure to take this steps before running VM init playbook:
+
+```
+ansible openstack -i inventory/hosts --sudo -m raw -a 'sed -i_bak "s/\(nameserver\) .*/\1 8\.8\.8\.8/" /etc/resolv.conf'
+ansible openstack -i inventory/hosts --sudo -m raw -a "apt install -y python-minimal"
+```
 
 Initial steps required by both VMs
 ----------------------------------
@@ -15,23 +25,8 @@ ssh-keyscan <VM IP address> >> ~/.ssh/known_hosts
 2. Setup ssh trust communication and install basic dependencies using *init\_vms* playbook
 
 ```
-ansible-playbook -i inventory/hosts init_vms.yml --extra-vars “group=<host_group>”
+ansible-playbook -i inventory/hosts init_vms.yml”
 ```
-
-* for OpenContrail VM use group *contrail*
-* for Devstack VM use group *openstack*
-
-
-**Notice:**
-If Devstack VM is installed on Ubuntu 16.04 be sure to take this steps before running VM init playbook:
-
-```
-ansible openstack -i inventory/hosts --sudo -m raw -a 'sed -i_bak "s/\(nameserver\) .*/\1 8\.8\.8\.8/" /etc/resolv.conf'
-ansible openstack -i inventory/hosts --sudo -m raw -a "apt install -y python-minimal"
-```
-
-**Notice:**
-Variables used by configuration templates are stored in *vars* directory so be sure to adjust files according to your setup before running OpenContrail and Devstack VMs playbooks.
 
 Setup OpenContrail VM
 ---------------------

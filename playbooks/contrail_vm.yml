@@ -8,8 +8,7 @@
   gather_facts: yes 
 
   vars_files:
-    - vars/default_vars.yml
-    - vars/contrail_vars.yml
+    - vars/all.yml
 
   tasks:
 
@@ -17,7 +16,6 @@
 
   - name: reboot VM to boot with newly installed kernel
     command: shutdown -r now "Ansible updates triggered" removes=/var/run/reboot-required
-    # shell: sleep 3 && shutdown -r now "Ansible updates triggered"
     async: 0
     poll: 0
     become: yes

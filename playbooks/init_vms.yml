@@ -1,13 +1,13 @@
 ---
 # Playbook initialize VM for further installation steps
-- hosts: "{{ group }}"
+- hosts: all 
   remote_user: ubuntu
   become: yes
   become_method: sudo 
   gather_facts: no
 
   vars_files:
-    - vars/default_vars.yml
+    - vars/all.yml
 
   tasks:
 

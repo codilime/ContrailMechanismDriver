@@ -1,11 +1,20 @@
 ---
-# Variables used for local.conf on OpenContrail VM
+
+# Multihost installation with compute node and OpenStack controller on different VMs
+multihost: True
+
+# Do not create initial project networks by Neutron
+create_initial_networks: False
+
+# nameserver used by VMs 
+nameserver: 8.8.8.8
 
 service_token: azertytokenX
 admin_pass: contrail123
 
 # IP address for OpenConrail VM and OpenStack controller VM
 contrail_ip: 192.168.14.110
+contrail_port: 8082
 openstack_ip: 192.168.14.108
 
 # Branches used to build OpenContrail VM
@@ -14,6 +23,3 @@ contrail_branch: R3.2.3.x
 
 # Kernel version supported by OpenContrail release
 kernel_version: 3.13.0-85
-
-# Contrail VM hostname
-hostname: pr-contrail4

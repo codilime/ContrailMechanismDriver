@@ -14,3 +14,12 @@
   with_items:
     - 'vnc_api-0.1.dev0.tar.gz'
     - 'cfgm_common-0.1.dev0.tar.gz'
+
+- name: clone contrail-neutron-plugin to ensure missing dependencies
+  git: 
+    repo: "https://github.com/Juniper/contrail-neutron-plugin.git"
+    dest: ~/ 
+    accept_hostkey: yes
+
+- name: install vnc_api && cfgm_common module
+  shell: 'cd ~/contrail-neutron-plugin && sudo python setup.py install'

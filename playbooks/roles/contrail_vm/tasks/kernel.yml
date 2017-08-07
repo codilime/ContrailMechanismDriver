@@ -1,6 +1,6 @@
 ---
 # install supported kernel version
-- name: install supported kernel version
+- name: 'install supported kernel version {{ kernel_version }}'
   apt:
     name: "{{ item }}"
     update_cache: yes

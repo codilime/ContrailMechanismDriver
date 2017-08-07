@@ -13,11 +13,11 @@
 - name: fetch vnc_api module
   fetch:
     src: /opt/stack/contrail/build/production/api-lib/dist/vnc_api-0.1.dev0.tar.gz
-    dest: files/vnc_api-0.1.dev0.tar.gz
+    dest: ../../openstack_vm/files/vnc_api-0.1.dev0.tar.gz
     flat: yes
  
 - name: fetch cfgm_common module
   fetch:
     src: /opt/stack/contrail/build/production/config/common/dist/cfgm_common-0.1.dev0.tar.gz
-    dest: files/cfgm_common-0.1.dev0.tar.gz
+    dest: ../../openstack_vm/files/cfgm_common-0.1.dev0.tar.gz
     flat: yes

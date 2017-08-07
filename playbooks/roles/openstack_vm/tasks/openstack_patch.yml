@@ -2,7 +2,7 @@
 # Patch stack.sh for proper endpoints used by OpenContrail controller
 - name: copy Openstack endpoint patch
   copy:
-    src: files/keystone.patch
+    src: ../files/keystone.patch
     dest: ~/devstack/keystone.patch
 
 - name: patch keystone endpoint 

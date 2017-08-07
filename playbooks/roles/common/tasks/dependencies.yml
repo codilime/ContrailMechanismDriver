@@ -1,0 +1,25 @@
+---
+# install required dependencies 
+- name: update apt cache
+  command: apt update
+  become: yes
+  become_method: sudo
+
+- name: install python-apt, pip & setuptools
+  command: apt install {{ item }} -y 
+  with_items:
+    - "python-apt"
+    - "python-setuptools"
+    - "python-pip"
+  become: yes
+  become_method: sudo
+
+- name: install git
+  apt:
+    name: "{{ item }}"
+    update_cache: yes
+    cache_valid_time: 3600
+  with_items:
+    - "git"
+  become: yes
+  become_method: sudo

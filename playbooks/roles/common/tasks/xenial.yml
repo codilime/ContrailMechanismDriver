@@ -1,0 +1,14 @@
+---
+# install prerequisite for xenial
+
+- name: setup nameserver before installing python
+  raw: 'sed -i_bak "s/\(nameserver\) .*/\1 8\.8\.8\.8/" /etc/resolv.conf'
+  become: yes
+  become_method: sudo
+  when: ansible_distribution_release == 'xenial'
+
+- name: install python 2.7 minimal required by ansible 
+  raw: 'apt install -y python-minimal'
+  become: yes
+  become_method: sudo
+  when: ansible_distribution_release == 'xenial'

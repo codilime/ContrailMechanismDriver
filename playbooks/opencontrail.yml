@@ -1,0 +1,12 @@
+---
+- hosts: contrail
+  remote_user: ubuntu
+  gather_facts: yes 
+  become: no
+  connection: ssh
+
+  roles:
+    - { role: common }
+    - { role: fetch_devstack, vm_group: contrail }
+    - { role: contrail_vm }
+    - { role: source_openrc }

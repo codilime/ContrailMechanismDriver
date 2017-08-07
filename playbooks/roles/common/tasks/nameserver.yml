@@ -1,0 +1,19 @@
+---
+# configure nameserver in VM
+- name: configure nameserver
+  lineinfile:
+    dest: /etc/dhcp/dhclient.conf
+    insertafter: '^#prepend domain-name-servers' 
+    line: 'supersede domain-name-servers {{ nameserver }};'
+    state: present
+  become: yes
+  become_method: sudo
+
+- name: update resolv.conf 
+  lineinfile:
+    dest: /etc/resolv.conf
+    regexp: '^nameserver .*'
+    line: 'nameserver {{ nameserver }}'
+    state: present
+  become: yes
+  become_method: sudo

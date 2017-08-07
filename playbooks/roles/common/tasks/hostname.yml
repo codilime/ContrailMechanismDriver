@@ -7,3 +7,5 @@
     regexp: '^127\.0\.0\.1'
     line: '127.0.0.1 localhost {{ inventory_hostname }}'
     state: present
+  become: yes
+  become_method: sudo

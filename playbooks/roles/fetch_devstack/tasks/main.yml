@@ -1,0 +1,3 @@
+---
+# Fetch devstack
+- include: fetch_devstack.yml

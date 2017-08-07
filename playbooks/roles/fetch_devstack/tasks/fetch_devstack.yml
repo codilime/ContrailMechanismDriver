@@ -9,5 +9,5 @@
 
 - name: local.conf
   template:
-    src: templates/{{ vm_group }}_local.conf.j2
+    src: ../templates/{{ vm_group }}_local.conf.j2
     dest: ~/devstack/local.conf

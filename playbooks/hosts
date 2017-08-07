@@ -1,5 +1,5 @@
 [contrail]
-pr-contrail4
+pr-contrail
 
 [openstack]
 pr-devstack

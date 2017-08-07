@@ -1,0 +1,5 @@
+---
+# run stack.sh
+- name: build OpenContrail via stack.sh
+  command: chdir=~/devstack ./stack.sh
+  ignore_errors: no

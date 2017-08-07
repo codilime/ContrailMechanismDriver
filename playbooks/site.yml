@@ -1,0 +1,4 @@
+#!/usr/bin/env ansible-playbook
+# This playbook 
+- include: opencontrail.yml
+- include: openstack.yml

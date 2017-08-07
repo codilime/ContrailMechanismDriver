@@ -1,0 +1,17 @@
+---
+# reboot VM
+- name: reboot VM to boot with newly installed kernel
+  command: shutdown -r now "Ansible updates triggered" removes=/var/run/reboot-required
+  async: 0
+  poll: 0
+  become: yes
+  become_method: sudo
+  register: restarted
+
+- name: wait for SSH on VM
+  local_action: shell ssh {{ inventory_hostname }} true
+  register: result
+  until: result|success
+  retries: 30
+  delay: 10
+  when: restarted.changed

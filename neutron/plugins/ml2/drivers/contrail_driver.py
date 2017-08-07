@@ -128,8 +128,15 @@ class Hndl(Enum):
 
 class ContrailSecurityGroupHook(NeutronDbPluginV2, SecurityGroupDbMixin):
     """Security Group Hook"""
-    def __init__(self, handlers):
-        self.handlers = handlers
+    def __init__(self, sg_handler, rule_handler):
+        """Setup Contrail Security Group Hook and subscribe to events related
+        to security groups.
+
+        :param sg_handler: An instance of SecurityGroupHandler.
+        :param rule_handler: An instance of SecurityGroupRuleHandler.
+        """
+        self.sg_handler = sg_handler
+        self.rule_handler = rule_handler
         self.listen()
 
     def listen(self):
@@ -160,12 +167,10 @@ class ContrailSecurityGroupHook(NeutronDbPluginV2, SecurityGroupDbMixin):
                                         security_group_rule=rule)
 
     def delete_group_rules(self, context, id):
-        sg_handler = self.handlers[Hndl.SecurityGroup]
-        sg_obj = sg_handler.get_sg_obj(id)
-        rule_handler = self.handlers[Hndl.SGRule]
-        old_rules = rule_handler.security_group_rules_read(sg_obj)
+        sg_obj = self.sg_handler.get_sg_obj(id)
+        old_rules = self.rule_handler.security_group_rules_read(sg_obj)
         for rule in old_rules or []:
-            rule_handler.resource_delete(context.to_dict(), rule['id'])
+            self.rule_handler.resource_delete(context.to_dict(), rule['id'])
 
     def sync_group(self, context, group):
         logger.info("Syncing group: [name: %s, id: %s, tenant: %s]" % (
@@ -203,17 +208,20 @@ class ContrailSecurityGroupHook(NeutronDbPluginV2, SecurityGroupDbMixin):
 
     def does_security_group_exist(self, uuid):
         try:
-            self.handlers[Hndl.SecurityGroup].resource_get(None, uuid)
+            self.sg_handler.resource_get(None, uuid)
             return True
         except SecurityGroupNotFound:
             return False
 
     def get_contrail_security_group_id(self, context, sg_id):
-        handler = self.handlers[Hndl.SecurityGroup]
+        if context is None:
+            context = neutron_context.get_admin_context()
         group = self.get_security_group(context, sg_id)
+
         if group['name'] == 'default':
             project_id = group['tenant_id']
-            return handler._ensure_default_security_group_exists(project_id)
+            return self.sg_handler._ensure_default_security_group_exists(project_id)
+
         return sg_id
 
     def create_security_group(self, resource, event, trigger, **kwargs):
@@ -226,10 +234,9 @@ class ContrailSecurityGroupHook(NeutronDbPluginV2, SecurityGroupDbMixin):
         """
         context = kwargs['context']
         sg = kwargs['security_group']
-        handler = self.handlers[Hndl.SecurityGroup]
 
         if kwargs['is_default']:
-            self.sync_default_group(context, sg)
+            self.sync_group(context, sg)
             return
 
         uuid = kwargs['security_group']['id']
@@ -241,10 +248,10 @@ class ContrailSecurityGroupHook(NeutronDbPluginV2, SecurityGroupDbMixin):
 
         # Security group have to be created manually because its uuid must
         # be the same on both OpenStack and Contrail endpoints
-        contrail_sg = handler._create_security_group(sg)
-        sg_obj = handler._security_group_neutron_to_vnc(sg, contrail_sg)
+        contrail_sg = self.sg_handler._create_security_group(sg)
+        sg_obj = self.sg_handler._security_group_neutron_to_vnc(sg, contrail_sg)
         sg_obj.uuid = uuid
-        sg_uuid = handler._resource_create(sg_obj)
+        sg_uuid = self.sg_handler._resource_create(sg_obj)
 
         if sg_uuid != uuid:
             logger.error("Contrail UUID (%s) and Stack UUID (%s) doesn't match!" %
@@ -268,7 +275,7 @@ class ContrailSecurityGroupHook(NeutronDbPluginV2, SecurityGroupDbMixin):
         """
         context = kwargs['context']
         sg = kwargs['security_group']
-        self.handlers[Hndl.SecurityGroup].resource_update(context, sg['id'], sg)
+        self.sg_handler.resource_update(context, sg['id'], sg)
 
     def delete_security_group(self, resource, event, trigger, **kwargs):
         """Event executed when security group is deleted.
@@ -281,7 +288,7 @@ class ContrailSecurityGroupHook(NeutronDbPluginV2, SecurityGroupDbMixin):
         """
         context = kwargs['context']
         sg = kwargs['security_group_id']
-        self.handlers[Hndl.SecurityGroup].resource_delete(context, sg)
+        self.sg_handler.resource_delete(context, sg)
 
     def create_security_group_rule(self, resource, event, trigger, **kwargs):
         """Event executed when security group rule is created.
@@ -293,7 +300,6 @@ class ContrailSecurityGroupHook(NeutronDbPluginV2, SecurityGroupDbMixin):
         """
         context = kwargs['context']
         rule = kwargs['security_group_rule']
-        handler = self.handlers[Hndl.SGRule]
 
         rule['security_group_id'] = self.get_contrail_security_group_id(
                                          context, rule['security_group_id'])
@@ -315,7 +321,7 @@ class ContrailSecurityGroupHook(NeutronDbPluginV2, SecurityGroupDbMixin):
             and rule.get('ethertype') == 'IPv6'):
             rule['remote_ip_prefix'] = '::/0'
 
-        handler.resource_create(context, rule)
+        self.rule_handler.resource_create(context, rule)
 
     def delete_security_group_rule(self, resource, event, trigger, **kwargs):
         """Event executed when security group rule is deleted.
@@ -328,9 +334,8 @@ class ContrailSecurityGroupHook(NeutronDbPluginV2, SecurityGroupDbMixin):
         """
         context = kwargs['context'].to_dict()
         rule = kwargs['security_group_rule_id']
-        handler = self.handlers[Hndl.SGRule]
 
-        handler.resource_delete(context, rule)
+        self.rule_handler.resource_delete(context, rule)
 
 
 class ContrailMechanismDriver(api.MechanismDriver):
@@ -418,7 +423,10 @@ class ContrailMechanismDriver(api.MechanismDriver):
             sg_res_handler.SecurityGroupHandler(self._vnc_lib),
             Hndl.SGRule: sgrule_handler.SecurityGroupRuleHandler(self._vnc_lib)
         }
-        self.security_hook = ContrailSecurityGroupHook(self.handlers)
+
+        self.security_hook = ContrailSecurityGroupHook(
+            self.handlers[Hndl.SecurityGroup],
+            self.handlers[Hndl.SGRule])
         self.security_hook.sync_security_groups()
 
     def create_network_precommit(self, context):
@@ -755,69 +763,6 @@ class ContrailMechanismDriver(api.MechanismDriver):
                     (sys._getframe().f_code.co_name, dump(context)))
         pass
 
-    def security_group_resource_create(self, context, sg_q):
-        self.handlers[Hndl.SecurityGroup]._kwargs.get(
-            'contrail_extensions_enabled', False)
-
-        uuid = sg_q['id']
-        sg_obj = None
-        try:
-            logger.info("SecGr get for uuid %s" % (uuid))
-            sg_obj = self.handlers[Hndl.SecurityGroup].resource_get(None, uuid)
-            logger.info("SecGr get: %s" % (dump(sg_obj)))
-        except Exception as e:
-            logger.info("Exception %s" % (dump(e)))
-            pass
-
-        if sg_obj is None:
-            sg_obj = (
-                self.handlers[Hndl.SecurityGroup]
-                ._security_group_neutron_to_vnc(
-                    sg_q,
-                    self.handlers[Hndl.SecurityGroup]._create_security_group(
-                        sg_q))
-            )
-            sg_obj.uuid = uuid
-            sg_uuid = self.handlers[Hndl.SecurityGroup]._resource_create(
-                sg_obj)
-            if sg_uuid != uuid:
-                raise ReferenceError(
-                    "SG _resource create returned object withd different uuid:"
-                    " %s (expected was %s" % (sg_uuid, uuid))
-        else:
-            sg_uuid = uuid
-
-        # allow all egress traffic
-        def_rule = {}
-        def_rule['port_range_min'] = 0
-        def_rule['port_range_max'] = 65535
-        def_rule['direction'] = 'egress'
-        def_rule['remote_ip_prefix'] = '0.0.0.0/0'
-        def_rule['remote_group_id'] = None
-        def_rule['protocol'] = 'any'
-        def_rule['ethertype'] = 'IPv4'
-        def_rule['security_group_id'] = sg_uuid
-        def_rule['tenant_id'] = sg_q['tenant_id']
-        self.handlers[Hndl.SGRule].resource_create(context, def_rule)
-
-        # allow all ingress traffic
-        def_rule = {}
-        def_rule['port_range_min'] = 0
-        def_rule['port_range_max'] = 65535
-        def_rule['direction'] = 'ingress'
-        def_rule['remote_ip_prefix'] = '0.0.0.0/0'
-        def_rule['remote_group_id'] = None
-        def_rule['protocol'] = 'any'
-        def_rule['ethertype'] = 'IPv4'
-        def_rule['security_group_id'] = sg_uuid
-        def_rule['tenant_id'] = sg_q['tenant_id']
-        self.handlers[Hndl.SGRule].resource_create(context, def_rule)
-
-    def create_dummy_security_group(self, sg_id, port_q):
-        sg_q = {'id': sg_id, 'tenant_id': port_q['tenant_id'],
-                'name': ('dummy' + sg_id)}
-        self.security_group_resource_create(None, sg_q)
-
     def clean_port_dict(self, port_q):
         keys = ['binding:profile', 'binding:vif_details']
         for key in keys:
@@ -827,6 +772,7 @@ class ContrailMechanismDriver(api.MechanismDriver):
         return port_q
 
     def port_resource_create(self, port_q):
+        port_q = port_q.copy()
         port_q = self.clean_port_dict(port_q)
         if 'network_id' not in port_q or 'tenant_id' not in port_q:
             raise self._raise_contrail_exception(
@@ -855,12 +801,17 @@ class ContrailMechanismDriver(api.MechanismDriver):
         if 'mac_address' in port_q:
             vmih._validate_mac_address(proj_id, net_id, port_q['mac_address'])
 
-        # Check and possibly create a dummy security group
-        sec_group_list = []
-        if 'security_groups' in port_q:
-            sec_group_list = port_q.get('security_groups')
+        # Check and translate security group
+        sec_group_list = port_q.get('security_groups', [])
         logger.info("All needed SG %s" % sec_group_list)
-        for sg_id in sec_group_list or []:
+        sec_group_list = [
+            self.security_hook.get_contrail_security_group_id(None, group)
+            for group in sec_group_list
+        ]
+        port_q['security_groups'] = sec_group_list
+        logger.info("Translated SG %s" % sec_group_list)
+
+        for sg_id in sec_group_list:
             logger.info("Checking SG: %s" % (sg_id))
             try:
                 self.handlers[Hndl.SecurityGroup].resource_get(None, sg_id)
@@ -868,7 +819,7 @@ class ContrailMechanismDriver(api.MechanismDriver):
             except Exception as e:
                 logger.info("Exception caught during SG (%s) read: %s" %
                             (sg_id, e))
-                self.create_dummy_security_group(sg_id, port_q)
+                raise
 
         logger.info("All SG: OK")
 

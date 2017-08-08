@@ -4,20 +4,27 @@
   command: chdir=/opt/stack/contrail/build/production/api-lib python setup.py sdist
   become: yes
   become_method: sudo
+  tags: driver
  
 - name: create archive for cfgm_common module
   command: chdir=/opt/stack/contrail/build/production/config/common python setup.py sdist
   become: yes
   become_method: sudo
+  tags: driver
 
-- name: fetch vnc_api module
+- name: fetch vnc_api && cfgm_common module
   fetch:
-    src: /opt/stack/contrail/build/production/api-lib/dist/vnc_api-0.1.dev0.tar.gz
-    dest: ../../openstack_vm/files/vnc_api-0.1.dev0.tar.gz
+    src: /opt/stack/contrail/build/production/{{ item }}
+    dest: /tmp/
     flat: yes
+  with_items:
+    - 'api-lib/dist/vnc_api-0.1.dev0.tar.gz'
+    - 'config/common/dist/cfgm_common-0.1.dev0.tar.gz'
+  tags: driver
  
-- name: fetch cfgm_common module
-  fetch:
-    src: /opt/stack/contrail/build/production/config/common/dist/cfgm_common-0.1.dev0.tar.gz
-    dest: ../../openstack_vm/files/cfgm_common-0.1.dev0.tar.gz
-    flat: yes
+  #- name: fetch cfgm_common module
+  #fetch:
+  #  src: /opt/stack/contrail/build/production/config/common/dist/*.tar.gz
+  #  dest: /tmp/
+  #  flat: yes
+  #tags: driver

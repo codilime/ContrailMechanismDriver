@@ -1,5 +1,5 @@
 [contrail]
-pr-contrail
+contrail.example.vm
 
 [openstack]
-pr-devstack
+openstack.example.vm

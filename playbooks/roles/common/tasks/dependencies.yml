@@ -24,12 +24,16 @@
   become: yes
   become_method: sudo
 
-  #- name: install proper version of devstack dependencies 
-  #command: pip install {{ item }}
-  #become: yes
-  #become_method: sudo
-  #with_items:
-  #  - 'pytz>=2017.2'
-  #  - 'iso8601>=0.1.12'
-  #  - 'cmd2>=0.7.5'
-  #when: ansible_distribution_release == 'xenial'
+- name: [hack] install devstack dependencies which will be replaced with those from devstack requirements.txt
+  command: pip install {{ item }}
+  become: yes
+  become_method: sudo
+  with_items:
+    - 'pytz'
+    - 'iso8601'
+    - 'cmd2'
+    - 'netifaces'
+    - 'monotonic'
+    - 'wrapt'
+    - 'rfc3986'
+  when: ansible_distribution_release == 'xenial'

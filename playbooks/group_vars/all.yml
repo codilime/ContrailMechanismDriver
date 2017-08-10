@@ -11,7 +11,7 @@
 #admin_pass: contrail123
 
 # [Required] IP address for OpenConrail VM.
-contrail_ip: 192.168.14.109
+contrail_ip: 192.168.14.111
 #contrail_ip: 
 # [Required] IP address for Openstack VM.
 openstack_ip: 192.168.14.108

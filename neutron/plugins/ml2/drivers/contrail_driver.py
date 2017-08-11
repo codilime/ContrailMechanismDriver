@@ -36,6 +36,7 @@ try:
 except:
     from neutron.common.exceptions import NeutronException, NetworkNotFound
 from neutron.plugins.ml2 import driver_api as api
+from neutron.plugins.ml2.drivers.contrail_sg_hook import ContrailSecurityGroupHook
 from neutron_plugin_contrail.plugins.opencontrail.vnc_client import (
     sg_res_handler
 )
@@ -200,6 +201,11 @@ class ContrailMechanismDriver(api.MechanismDriver):
             sg_res_handler.SecurityGroupHandler(self._vnc_lib),
             Hndl.SGRule: sgrule_handler.SecurityGroupRuleHandler(self._vnc_lib)
         }
+
+        self.security_hook = ContrailSecurityGroupHook(
+            self.handlers[Hndl.SecurityGroup],
+            self.handlers[Hndl.SGRule])
+        self.security_hook.sync_security_groups()
 
     def create_network_precommit(self, context):
         """Allocate resources for a new network.
@@ -535,69 +541,6 @@ class ContrailMechanismDriver(api.MechanismDriver):
                     (sys._getframe().f_code.co_name, dump(context)))
         pass
 
-    def security_group_resource_create(self, context, sg_q):
-        self.handlers[Hndl.SecurityGroup]._kwargs.get(
-            'contrail_extensions_enabled', False)
-
-        uuid = sg_q['id']
-        sg_obj = None
-        try:
-            logger.info("SecGr get for uuid %s" % (uuid))
-            sg_obj = self.handlers[Hndl.SecurityGroup].resource_get(None, uuid)
-            logger.info("SecGr get: %s" % (dump(sg_obj)))
-        except Exception as e:
-            logger.info("Exception %s" % (dump(e)))
-            pass
-
-        if sg_obj is None:
-            sg_obj = (
-                self.handlers[Hndl.SecurityGroup]
-                ._security_group_neutron_to_vnc(
-                    sg_q,
-                    self.handlers[Hndl.SecurityGroup]._create_security_group(
-                        sg_q))
-            )
-            sg_obj.uuid = uuid
-            sg_uuid = self.handlers[Hndl.SecurityGroup]._resource_create(
-                sg_obj)
-            if sg_uuid != uuid:
-                raise ReferenceError(
-                    "SG _resource create returned object withd different uuid:"
-                    " %s (expected was %s" % (sg_uuid, uuid))
-        else:
-            sg_uuid = uuid
-
-        # allow all egress traffic
-        def_rule = {}
-        def_rule['port_range_min'] = 0
-        def_rule['port_range_max'] = 65535
-        def_rule['direction'] = 'egress'
-        def_rule['remote_ip_prefix'] = '0.0.0.0/0'
-        def_rule['remote_group_id'] = None
-        def_rule['protocol'] = 'any'
-        def_rule['ethertype'] = 'IPv4'
-        def_rule['security_group_id'] = sg_uuid
-        def_rule['tenant_id'] = sg_q['tenant_id']
-        self.handlers[Hndl.SGRule].resource_create(context, def_rule)
-
-        # allow all ingress traffic
-        def_rule = {}
-        def_rule['port_range_min'] = 0
-        def_rule['port_range_max'] = 65535
-        def_rule['direction'] = 'ingress'
-        def_rule['remote_ip_prefix'] = '0.0.0.0/0'
-        def_rule['remote_group_id'] = None
-        def_rule['protocol'] = 'any'
-        def_rule['ethertype'] = 'IPv4'
-        def_rule['security_group_id'] = sg_uuid
-        def_rule['tenant_id'] = sg_q['tenant_id']
-        self.handlers[Hndl.SGRule].resource_create(context, def_rule)
-
-    def create_dummy_security_group(self, sg_id, port_q):
-        sg_q = {'id': sg_id, 'tenant_id': port_q['tenant_id'],
-                'name': ('dummy' + sg_id)}
-        self.security_group_resource_create(None, sg_q)
-
     def clean_port_dict(self, port_q):
         keys = ['binding:profile', 'binding:vif_details']
         for key in keys:
@@ -607,6 +550,7 @@ class ContrailMechanismDriver(api.MechanismDriver):
         return port_q
 
     def port_resource_create(self, port_q):
+        port_q = port_q.copy()
         port_q = self.clean_port_dict(port_q)
         if 'network_id' not in port_q or 'tenant_id' not in port_q:
             raise self._raise_contrail_exception(
@@ -635,12 +579,17 @@ class ContrailMechanismDriver(api.MechanismDriver):
         if 'mac_address' in port_q:
             vmih._validate_mac_address(proj_id, net_id, port_q['mac_address'])
 
-        # Check and possibly create a dummy security group
-        sec_group_list = []
-        if 'security_groups' in port_q:
-            sec_group_list = port_q.get('security_groups')
+        # Check and translate security group
+        sec_group_list = port_q.get('security_groups', [])
         logger.info("All needed SG %s" % sec_group_list)
-        for sg_id in sec_group_list or []:
+        sec_group_list = [
+            self.security_hook.get_contrail_security_group_id(None, group)
+            for group in sec_group_list
+        ]
+        port_q['security_groups'] = sec_group_list
+        logger.info("Translated SG %s" % sec_group_list)
+
+        for sg_id in sec_group_list:
             logger.info("Checking SG: %s" % (sg_id))
             try:
                 self.handlers[Hndl.SecurityGroup].resource_get(None, sg_id)
@@ -648,7 +597,7 @@ class ContrailMechanismDriver(api.MechanismDriver):
             except Exception as e:
                 logger.info("Exception caught during SG (%s) read: %s" %
                             (sg_id, e))
-                self.create_dummy_security_group(sg_id, port_q)
+                raise
 
         logger.info("All SG: OK")
 

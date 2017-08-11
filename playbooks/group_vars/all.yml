@@ -23,5 +23,5 @@ openstack_branch:
 # [Required] OpenContrail branch to build on VM.
 contrail_branch:
 
-# [Required] Kernel version supported by OpenContrail branch.
+# [Required] Kernel version supported by OpenContrail branch. This must be a part of package name for example to use ubuntu 14.0.4 linux-image-3.13.0-77-generic package you should enter 3.13.0.77 here
 kernel_version:

@@ -6,12 +6,13 @@
   poll: 0
   become: yes
   become_method: sudo
+  when: kernel_install | changed
   register: restarted
 
 - name: wait for SSH on VM
   local_action: shell ssh {{ inventory_hostname }} true
   register: result
-  until: result|success
+  until: result | success
   retries: 30
   delay: 10
-  when: restarted.changed
+  when: restarted | changed

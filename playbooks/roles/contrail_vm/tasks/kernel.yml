@@ -10,3 +10,4 @@
     - "linux-headers-{{ kernel_version }}-generic"
   become: yes
   become_method: sudo
+  register: kernel_install

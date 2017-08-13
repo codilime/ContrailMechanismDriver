@@ -1,5 +1,13 @@
 ---
 # copy set of patches used to setup Contrail VM
+- name: install fixtures
+  pip: 
+    name: "{{ item }}"
+  become: yes
+  become_method: sudo
+  with_items:
+    - 'fixtures'
+
 - name: copy contrail_patches
   copy:
     src: ../files/contrail_patches

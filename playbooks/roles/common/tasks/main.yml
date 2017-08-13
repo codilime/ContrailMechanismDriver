@@ -2,8 +2,8 @@
 # Playbook initialize VM for further installation steps
 
 # find out way to restrict running only for first run 
-# - include: xenial.yml
 - include: check_variables.yml
+- include: xenial.yml
 - include: ssh_keys.yml
 - include: nameserver.yml
 - include: hostname.yml

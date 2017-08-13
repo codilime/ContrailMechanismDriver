@@ -21,10 +21,3 @@
     - 'api-lib/dist/vnc_api-0.1.dev0.tar.gz'
     - 'config/common/dist/cfgm_common-0.1.dev0.tar.gz'
   tags: driver
- 
-  #- name: fetch cfgm_common module
-  #fetch:
-  #  src: /opt/stack/contrail/build/production/config/common/dist/*.tar.gz
-  #  dest: /tmp/
-  #  flat: yes
-  #tags: driver

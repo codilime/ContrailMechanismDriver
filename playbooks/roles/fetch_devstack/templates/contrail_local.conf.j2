@@ -24,9 +24,14 @@ LOG_COLOR=True
 MYSQL_HOST=$SERVICE_HOST
 RABBIT_HOST=$SERVICE_HOST
 Q_HOST=$SERVICE_HOST
+
+# starting from Ocata release placement-api is required 
+# and has to be enabled as well
+{% if 'newton' in openstack_branch %}
 ENABLED_SERVICES=n-cpu,neutron,vrouter,api-srv,disco,svc-mon,schema,control,collector,analytic-api,query-engine,dns,named,ui-jobs,ui-webs,alarm-gen
-#starting from Ocata release placement-api has to be enabled as well
-#ENABLED_SERVICES=n-cpu,neutron,placement-api,vrouter,api-srv,disco,svc-mon,schema,control,collector,analytic-api,query-engine,dns,named,ui-jobs,ui-webs,alarm-gen
+{% else %}
+ENABLED_SERVICES=n-cpu,neutron,placement-api,vrouter,api-srv,disco,svc-mon,schema,control,collector,analytic-api,query-engine,dns,named,ui-jobs,ui-webs,alarm-gen
+{% endif %}
 
 NEUTRON_CREATE_INITIAL_NETWORKS={{ create_initial_networks }}
 
@@ -34,3 +39,6 @@ CONTRAIL_BRANCH={{ contrail_branch }}
 CONTRAIL_PATCHES='contrail_patches'
 CONFIG_IP=$HOST_IP
 enable_plugin contrail https://github.com/zioc/contrail-devstack-plugin.git
+# Use this with precaution. You have to run multiples time the compilation before it succeed with parallel jobs
+#SCONS_JOBS=$(($(lscpu -p | grep -cve '^#')+1))
+#SCONS_JOBS=2

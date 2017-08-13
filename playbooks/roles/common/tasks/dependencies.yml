@@ -24,7 +24,7 @@
   become: yes
   become_method: sudo
 
-- name: [hack] install devstack dependencies which will be replaced with those from devstack requirements.txt
+- name: '[hack] install devstack dependencies which will be replaced with those from devstack requirements.txt'
   command: pip install {{ item }}
   become: yes
   become_method: sudo

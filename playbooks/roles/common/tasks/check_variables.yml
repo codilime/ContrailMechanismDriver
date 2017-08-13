@@ -3,25 +3,25 @@
 
 - fail:
     msg: "contrail_ip: Please check group_vars/all.yml if all required vars were set."
-  when: (contrail_ip | default(None) == None) 
+  when: not contrail_ip | ipv4 
   tags: check
 
 - fail:
     msg: "openstack_ip: Please check group_vars/all.yml if all required vars were set."
-  when: (openstack_ip | default(None) == None) 
+  when: not openstack_ip | ipv4
   tags: check
 
 - fail:
     msg: "openstack_branch: Please check group_vars/all.yml if all required vars were set."
-  when: (openstack_branch | default(None) == None) 
+  when: not openstack_branch | mandatory
   tags: check
 
 - fail:
     msg: "contrail_branch: Please check group_vars/all.yml if all required vars were set."
-  when: (contrail_branch | default(None) == None) 
+  when: not contrail_branch | mandatory
   tags: check
 
 - fail:
     msg: "kernel_version: Please check group_vars/all.yml if all required vars were set."
-  when: (kernel_version | default(None) == None) 
+  when: not kernel_version | mandatory
   tags: check

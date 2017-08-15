@@ -2,4 +2,8 @@
 # run stack.sh
 - name: build OpenContrail via stack.sh
   command: chdir=~/devstack ./stack.sh
-  ignore_errors: no
+  register: task_result
+  until: task_result.rc == 0
+  retries: 3
+  delay: 1
+  ignore_errors: yes 

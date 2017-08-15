@@ -1,0 +1,33 @@
+---
+- hosts: contrail
+  remote_user: ubuntu
+  gather_facts: no 
+  become: no
+  connection: ssh
+
+  roles:
+    - { role: common }
+    - { role: fetch_devstack, vm_group: contrail }
+    - { role: contrail_vm }
+
+- hosts: openstack 
+  remote_user: ubuntu
+  gather_facts: no 
+  become: no
+  connection: ssh
+
+  roles:
+    - { role: common }
+    - { role: fetch_devstack, vm_group: openstack }
+    - { role: openstack_vm }
+    - { role: source_openrc }
+
+- hosts: contrail
+  remote_user: ubuntu
+  gather_facts: no 
+  become: no
+  connection: ssh
+
+  roles:
+    - { role: restack_contrail }
+    - { role: source_openrc }

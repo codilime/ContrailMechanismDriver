@@ -1,26 +1,29 @@
 ---
 # install required dependencies 
-- name: install python-apt, pip, setuptools & python-dev
+- name: install python-apt
   command: apt install {{ item }} -y 
   with_items:
     - "python-apt"
-    - "python-setuptools"
-    - "python-pip"
-    - "python-dev"
+    #- "python-setuptools"
+    #- "python-pip"
+    #- "python-dev"
   become: yes
   become_method: sudo
 
-- name: install git
+- name: install git, pip, setuptools & python-dev
   apt:
     name: "{{ item }}"
     update_cache: yes
     cache_valid_time: 3600
   with_items:
     - "git"
+    - "python-setuptools"
+    - "python-pip"
+    - "python-dev"
   become: yes
   become_method: sudo
 
-- name: '[hack] install devstack dependencies those will be replaced later with devstack requirements.txt'
+- name: (hack) install devstack dependencies those will be replaced later with devstack requirements.txt
   pip: 
     name: "{{ item }}"
   become: yes

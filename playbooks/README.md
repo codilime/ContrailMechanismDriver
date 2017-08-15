@@ -1,17 +1,7 @@
 Setup development VMs using Ansible playbooks
 =============================================
 
-Variables used by configuration templates are stored in *group_vars* directory so be sure to adjust it according to your setup before running *site.yml* playbook.
-
-
-Prerequisite
--------------
-* If Devstack VM is installed on Ubuntu 16.04 be sure to take this steps before running VM init playbook:
-
-```
-ansible openstack -i hosts --sudo -m raw -a 'sed -i_bak "s/\(nameserver\) .*/\1 8\.8\.8\.8/" /etc/resolv.conf'
-ansible openstack -i hosts --sudo -m raw -a "apt install -y python-minimal"
-```
+Variables used by configuration templates are stored in *group_vars* directory so be sure to adjust it according to your setup before running *site.yml* playbook. It uses also *hosts* for VMs definition so be sure to reedit this as well.
 
 
 Initial steps required by both VMs
@@ -31,4 +21,14 @@ Run *site.yml* playbook (it could take few hours to finish):
 
 ```
 ansible-playbook site.yml
+```
+
+
+NOTICE
+------
+Use Ubuntu 14.04 and 16.04 for VMs. If you are installing Openstack Ocata after succesfull deployment be sure to issue command listed below on OpenStack node, otherwise scheduling VM using Nova won't work.
+
+```
+$ nova-manage cell_v2 simple_cell_setup
+
 ```

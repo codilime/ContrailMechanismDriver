@@ -24,6 +24,6 @@
     accept_hostkey: yes
   tags: driver
 
-- name: install vnc_api && cfgm_common module
+- name: install contrail-neutron-plugin
   shell: 'cd ~/contrail-neutron-plugin && sudo python setup.py install'
   tags: driver

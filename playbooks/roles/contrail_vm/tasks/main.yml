@@ -2,6 +2,7 @@
 # setting up OpenContrail VM
 - include: kernel.yml
 - include: reboot.yml
+- include: dependencies.yml
 - include: contrail_patches.yml
 - include: stack_sh.yml
 - include: fetch_drv_depend.yml

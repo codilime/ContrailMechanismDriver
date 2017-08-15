@@ -1,11 +1,2 @@
 patch $CONTRAIL_DEST/devstack/plugin.sh < plugin.patch
 patch $CONTRAIL_DEST/devstack/lib/contrail_config < contrail_config.patch
-
-####### Fix for query-engine crash with cassandra-cpp-driver > 2.2.0 ######
-####### Bug described here: https://datastax-oss.atlassian.net/browse/CPP-165 #####
-####### and fix in OpenContrail is here: https://review.opencontrail.org/#/c/33118/ #####
-####### Workaround is manually install v2.2.0 and plugin script will not override this ####
-wget http://downloads.datastax.com/cpp-driver/ubuntu/14.04/cassandra/v2.2.0/cassandra-cpp-driver_2.2.0-1_amd64.deb
-wget http://downloads.datastax.com/cpp-driver/ubuntu/14.04/cassandra/v2.2.0/cassandra-cpp-driver-dev_2.2.0-1_amd64.deb
-wget http://downloads.datastax.com/cpp-driver/ubuntu/14.04/dependencies/libuv/v1.7.5/libuv_1.7.5-1_amd64.deb
-sudo dpkg -i *.deb

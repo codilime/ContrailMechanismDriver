@@ -11,7 +11,7 @@ service_token:
 admin_pass:
 
 # [Required] IP address for OpenConrail VM.
-contrail_ip: 
+contrail_ip:
 # [Required] IP address for Openstack VM.
 openstack_ip:
 

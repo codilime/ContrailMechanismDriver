@@ -25,5 +25,7 @@
   tags: driver
 
 - name: install contrail-neutron-plugin
-  shell: 'cd ~/contrail-neutron-plugin && sudo python setup.py install'
+  shell: sudo pip install .
+  args:
+    chdir: ~/contrail-neutron-plugin
   tags: driver

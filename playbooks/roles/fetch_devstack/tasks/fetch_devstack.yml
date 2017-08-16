@@ -6,6 +6,7 @@
     dest: ~/devstack 
     version: "{{ openstack_branch }}"
     accept_hostkey: yes
+    force: yes
 
 - name: local.conf
   template:
